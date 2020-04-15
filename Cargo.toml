@@ -1,9 +1,8 @@
 [package]
 name = "yaevmi"
 version = "0.1.0"
-authors = ["Matt Garnett <matt.garnett@me.com>"]
+authors = ["Matt Garnett <crates@garnett.dev>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+primitive-types = "0.7.0"
