@@ -1,4 +1,7 @@
+use crate::context::Context;
+use crate::env::Environment;
 use crate::instructions::*;
+use crate::interupt::{Exit, Interupt, Yield};
 
 use primitive_types::U256;
 
@@ -20,56 +23,23 @@ macro_rules! from_base {
     }};
 }
 
-#[derive(Debug, PartialEq)]
-pub enum Yield {
-    // intrinsic
-    Stop,
-    Revert,
-    Ret,
-
-    // external
-    Call,
-    Create,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Exit {
-    // successful
-    Stop,
-    Ret,
-    SelfDestruct,
-
-    // normal error
-    StackUnderflow,
-    StackOverflow,
-    BadJump,
-    BadRange,
-    InvalidOp,
-    CallOverflow,
-    OutOfGas,
-
-    // revert
-    Revert,
-
-    // fatal
-    NotSupported,
-    UnhandledInterrupt,
-}
-
-pub struct Machine {
+pub struct Machine<'a> {
     pc: usize,
     stack: Vec<U256>,
     code: Vec<u8>,
+    memory: Vec<u8>,
+    ctx: Context,
+    env: &'a Environment,
 }
 
-impl Machine {
-    pub fn run(&mut self) -> Result<Yield, Exit> {
+impl<'a> Machine<'a> {
+    pub fn run(&mut self) -> Interupt<Yield, Exit> {
         while self.pc < self.code.len() {
             let op = self.code[self.pc];
 
             match op {
                 STOP => {
-                    return Ok(Yield::Stop);
+                    return Interupt::Yield(Yield::Stop);
                 }
                 ADD => {
                     let r = pop!(self.stack) + pop!(self.stack);
@@ -108,7 +78,7 @@ impl Machine {
             self.pc += 1;
         }
 
-        Ok(Yield::Ret)
+        Interupt::Yield(Yield::Ret)
     }
 }
 
