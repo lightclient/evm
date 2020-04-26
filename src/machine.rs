@@ -7,7 +7,10 @@ use primitive_types::U256;
 
 macro_rules! pop {
     ($s: expr) => {{
-        $s.pop().unwrap()
+        match $s.pop() {
+            Some(o) => o,
+            None => return Interupt::Exit(Exit::StackUnderflow),
+        }
     }};
 }
 
@@ -53,37 +56,45 @@ impl<'a> Machine<'a> {
                     return Interupt::Exit(Exit::Stop);
                 }
                 ADD => {
-                    let r = pop!(self.stack) + pop!(self.stack);
+                    let (r, _) = pop!(self.stack).overflowing_add(pop!(self.stack));
                     self.stack.push(r);
                 }
                 SUB => {
-                    let r = pop!(self.stack) - pop!(self.stack);
+                    let (r, _) = pop!(self.stack).overflowing_sub(pop!(self.stack));
                     self.stack.push(r);
                 }
                 MUL => {
-                    let r = pop!(self.stack) * pop!(self.stack);
+                    let (r, _) = pop!(self.stack).overflowing_mul(pop!(self.stack));
                     self.stack.push(r);
                 }
-                DIV => {
-                    let r = pop!(self.stack) / pop!(self.stack);
-                    self.stack.push(r);
-                }
+                DIV => match pop!(self.stack).checked_div(pop!(self.stack)) {
+                    Some(r) => self.stack.push(r),
+                    None => self.stack.push(0.into()),
+                },
                 op @ PUSH1..=PUSH32 => {
                     self.pc += 1;
-                    let o = &self.code[self.pc..self.pc + from_base!(PUSH1, op) + 1];
-                    push!(self.stack, o);
+
+                    if self.pc + from_base!(PUSH1, op) < self.code.len() {
+                        let o = &self.code[self.pc..self.pc + from_base!(PUSH1, op) + 1];
+                        push!(self.stack, o);
+                    } else {
+                        return Interupt::Exit(Exit::StackUnderflow);
+                    }
                 }
                 op @ DUP1..=DUP16 => {
                     let len = self.stack.len() - 1;
                     let idx = len - from_base!(DUP1, op);
-                    push!(self.stack, self.stack.get(idx).unwrap());
+                    match self.stack.get(idx) {
+                        Some(o) => push!(self.stack, o),
+                        None => return Interupt::Exit(Exit::StackUnderflow),
+                    }
                 }
                 op @ SWAP1..=SWAP16 => {
                     let len = self.stack.len() - 1;
                     let idx = len - from_base!(SWAP1, op);
                     self.stack.swap(len, idx);
                 }
-                _ => unimplemented!(),
+                _ => return Interupt::Exit(Exit::NotSupported),
             }
 
             self.pc += 1;
