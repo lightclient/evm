@@ -35,10 +35,10 @@ pub trait Handler {
             })
             .collect();
 
-        let _ = Cases { test_cases }.test_results();
+        let results = Cases { test_cases }.test_results();
 
-        // let name = format!("{}/{}", Self::runner_name(), Self::handler_name());
-        // assert_tests_pass(&name, &handler_path, &results);
+        let name = format!("{}/{}", Self::runner_name(), Self::handler_name());
+        assert_tests_pass(&name, &handler_path, &results);
     }
 }
 

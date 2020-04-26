@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::path::Path;
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Account {
     balance: U256,
     #[serde(deserialize_with = "from_hex_to_buffer")]
@@ -32,14 +32,12 @@ pub struct Vm {
     pub logs: Option<Vec<u8>>,
     #[serde(skip_deserializing)]
     pub out: Vec<u8>,
-    #[serde(skip_deserializing)]
-    pub post: BTreeMap<H160, Account>,
+    pub post: Option<BTreeMap<H160, Account>>,
     pub pre: BTreeMap<H160, Account>,
 }
 
 impl LoadCase for Vm {
     fn load_from_dir(path: &Path) -> Result<Self, Error> {
-        println!("decoding this path: {:?}", path);
         json_decode_file(path)
     }
 }
@@ -53,7 +51,6 @@ pub struct Info {
     pub source: String,
     pub source_hash: String,
 }
-
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Env {
@@ -119,8 +116,14 @@ impl Case for Vm {
 
         rt.execute(ctx);
 
+        if self.post.is_none() {
+            return Err(Error::NotEqual(String::new()));
+        }
+
+        let post = self.post.clone().unwrap();
+
         for (h, a) in rt.state {
-            let b = self.post.get(&h);
+            let b = post.get(&h);
 
             if b.is_none() {
                 return Err(Error::NotEqual(String::new()));

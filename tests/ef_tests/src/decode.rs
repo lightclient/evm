@@ -26,7 +26,6 @@ pub fn json_decode_file<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T
                             s = match v {
                                 serde_json::Value::Object(o) => {
                                     let r = serde_json::to_string(&o).unwrap();
-                                    println!("{:?}", r);
                                     Ok(r)
                                 }
                                 _ => Err(Error::FailedToParseTest("bad!".to_owned())),
@@ -39,7 +38,6 @@ pub fn json_decode_file<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T
                 Err(_) => Err(Error::FailedToParseTest("bad".to_owned())),
             }
         })
-        // .and_then(|s| Ok(s.replace("\"0x", "\"")))
         .and_then(|s| json_decode(&s))
 }
 
