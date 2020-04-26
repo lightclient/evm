@@ -1,9 +1,13 @@
 [package]
 name = "ef_tests"
 version = "0.1.0"
-authors = ["Matt Garnett <matt.garnett@me.com>"]
+authors = ["Matt Garnett <crates@garnett.dev>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+fast_evm = { path = "../../" }
+hex = "0.4.2"
+primitive-types = { version = "0.7.0", features = ["serde", "rustc-hex"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+

@@ -1,9 +1,9 @@
-use primitive_types::H160;
+use primitive_types::{H160, U256};
 
 pub struct Environment {
-    coinbase: H160,
-    difficulty: u64,
-    gas_limit: u64,
-    block_number: u64,
-    timestamp: u64,
+    pub coinbase: H160,
+    pub difficulty: U256,
+    pub gas_limit: U256,
+    pub block_number: U256,
+    pub timestamp: U256,
 }

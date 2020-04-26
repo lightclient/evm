@@ -5,11 +5,6 @@ pub enum Interupt<Y, E> {
 
 #[derive(Debug, PartialEq)]
 pub enum Yield {
-    // intrinsic
-    Stop,
-    Revert,
-    Ret,
-
     // external
     Call,
     Create,

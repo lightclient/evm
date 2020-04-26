@@ -1,4 +1,4 @@
-use crate::context::Context;
+use crate::ctx::Context;
 use crate::env::Environment;
 use crate::instructions::*;
 use crate::interupt::{Exit, Interupt, Yield};
@@ -24,22 +24,33 @@ macro_rules! from_base {
 }
 
 pub struct Machine<'a> {
-    pc: usize,
-    stack: Vec<U256>,
-    code: Vec<u8>,
-    memory: Vec<u8>,
-    ctx: Context,
-    env: &'a Environment,
+    pub pc: usize,
+    pub stack: Vec<U256>,
+    pub memory: Vec<u8>,
+    pub code: Vec<u8>,
+    pub ctx: Context,
+    pub env: &'a Environment,
 }
 
 impl<'a> Machine<'a> {
+    pub fn new(code: Vec<u8>, ctx: Context, env: &'a Environment) -> Self {
+        Self {
+            pc: 0,
+            stack: vec![],
+            memory: vec![],
+            code,
+            ctx,
+            env,
+        }
+    }
+
     pub fn run(&mut self) -> Interupt<Yield, Exit> {
         while self.pc < self.code.len() {
             let op = self.code[self.pc];
 
             match op {
                 STOP => {
-                    return Interupt::Yield(Yield::Stop);
+                    return Interupt::Exit(Exit::Stop);
                 }
                 ADD => {
                     let r = pop!(self.stack) + pop!(self.stack);
@@ -78,37 +89,6 @@ impl<'a> Machine<'a> {
             self.pc += 1;
         }
 
-        Interupt::Yield(Yield::Ret)
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn basic_arithmetic() {
-        let code: Vec<u8> = vec![PUSH1, 0x01, PUSH1, 0x02, ADD];
-        let mut i = Machine {
-            pc: 0,
-            stack: vec![],
-            code,
-        };
-
-        assert_eq!(i.run(), Ok(Yield::Ret));
-        assert_eq!(i.stack, vec![3.into()])
-    }
-
-    #[test]
-    fn dup_swap() {
-        let code: Vec<u8> = vec![PUSH1, 0xFF, PUSH1, 0x01, DUP1, SWAP3];
-        let mut i = Machine {
-            pc: 0,
-            stack: vec![],
-            code,
-        };
-
-        assert_eq!(i.run(), Ok(Yield::Ret));
-        assert_eq!(i.stack, vec![0x01.into(), 0x01.into(), 0xFF.into()])
+        Interupt::Exit(Exit::Ret)
     }
 }
