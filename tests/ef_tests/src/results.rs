@@ -63,7 +63,7 @@ pub fn print_results(
             case.path.display()
         );
     }
-    for failure in failed {
+    for failure in failed.iter().step_by(20) {
         let error = failure.result.clone().unwrap_err();
 
         println!("-------");

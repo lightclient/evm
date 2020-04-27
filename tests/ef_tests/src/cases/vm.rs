@@ -126,17 +126,52 @@ impl Case for Vm {
             let b = post.get(&h);
 
             if b.is_none() {
-                return Err(Error::NotEqual(String::new()));
+                return Err(Error::NotEqual(format!(
+                    "Couldn't load account from json: {}",
+                    h
+                )));
             }
 
             let b = b.unwrap();
 
-            if !(a.balance == b.balance
-                && a.code == b.code
-                && a.nonce == b.nonce
-                && a.storage == b.storage)
-            {
-                return Err(Error::NotEqual(String::new()));
+            if a.balance != b.balance {
+                return Err(Error::NotEqual(format!(
+                    "Got balance: {:?}, expected: {:?}",
+                    a.balance, b.balance
+                )));
+            }
+
+            if a.code != b.code {
+                return Err(Error::NotEqual(format!(
+                    "Got code: {:?}, expected: {:?}",
+                    a.code, b.code
+                )));
+            }
+
+            if a.nonce != b.nonce {
+                return Err(Error::NotEqual(format!(
+                    "Got nonce: {:?}, expected: {:?}",
+                    a.nonce, b.nonce
+                )));
+            }
+
+            for (k, v) in b.storage.clone() {
+                match a.storage.get(&k) {
+                    Some(av) => {
+                        if v != *av {
+                            return Err(Error::NotEqual(format!(
+                                "Storage mismatch at {:?}. Got: {:?}, expected: {:?}",
+                                k, av, v
+                            )));
+                        }
+                    }
+                    None => {
+                        return Err(Error::NotEqual(format!(
+                            "Storage missing at {:?}. Expected: {:?}",
+                            k, v
+                        )))
+                    }
+                }
             }
         }
 

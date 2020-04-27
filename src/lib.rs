@@ -5,3 +5,4 @@ pub mod instructions;
 pub mod interupt;
 pub mod machine;
 pub mod runtime;
+pub mod utils;

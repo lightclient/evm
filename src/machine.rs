@@ -2,8 +2,10 @@ use crate::ctx::Context;
 use crate::env::Environment;
 use crate::instructions::*;
 use crate::interupt::{Exit, Interupt, Yield};
+use crate::utils::I256;
 
 use primitive_types::U256;
+use std::ops::{BitAnd, BitOr, BitXor};
 
 macro_rules! pop {
     ($s: expr) => {{
@@ -50,6 +52,7 @@ impl<'a> Machine<'a> {
     pub fn run(&mut self) -> Interupt<Yield, Exit> {
         while self.pc < self.code.len() {
             let op = self.code[self.pc];
+            self.pc += 1;
 
             match op {
                 STOP => {
@@ -71,15 +74,137 @@ impl<'a> Machine<'a> {
                     Some(r) => self.stack.push(r),
                     None => self.stack.push(0.into()),
                 },
-                op @ PUSH1..=PUSH32 => {
-                    self.pc += 1;
+                SDIV => {
+                    let op1: I256 = pop!(self.stack).into();
+                    let op2: I256 = pop!(self.stack).into();
+                    self.stack.push((op1 / op2).into())
+                }
+                MOD => {
+                    let r = pop!(self.stack)
+                        .checked_rem(pop!(self.stack))
+                        .unwrap_or(0.into());
+                    self.stack.push(r);
+                }
+                SMOD => {
+                    let op1: I256 = pop!(self.stack).into();
+                    let op2: I256 = pop!(self.stack).into();
+                    let r = op1.checked_rem(op2).unwrap_or(I256::zero());
+                    self.stack.push(r.into())
+                }
+                ADDMOD => {
+                    let op1 = pop!(self.stack);
+                    let op2 = pop!(self.stack);
+                    let op3 = pop!(self.stack);
+                    let (mut r, _) = op1.overflowing_add(op2);
+                    r = r.checked_rem(op3).unwrap_or(0.into());
+                    self.stack.push(r);
+                }
+                MULMOD => {
+                    let op1 = pop!(self.stack);
+                    let op2 = pop!(self.stack);
+                    let op3 = pop!(self.stack);
+                    let (mut r, _) = op1.overflowing_mul(op2);
+                    r = r.checked_rem(op3).unwrap_or(0.into());
+                    self.stack.push(r);
+                }
+                SIGEXTEND => {
+                    let op1 = pop!(self.stack);
+                    let op2 = pop!(self.stack);
+                    let mut ret = U256::zero();
 
+                    if op1 > U256::from(32) {
+                        ret = op2;
+                    } else {
+                        let len: usize = op1.as_usize();
+                        let t: usize = 8 * (len + 1) - 1;
+                        let t_bit_mask = U256::one() << t;
+                        let t_value = (op2 & t_bit_mask) >> t;
+                        for i in 0..256 {
+                            let bit_mask = U256::one() << i;
+                            let i_value = (op2 & bit_mask) >> i;
+                            if i <= t {
+                                ret = ret.overflowing_add(i_value << i).0;
+                            } else {
+                                ret = ret.overflowing_add(t_value << i).0;
+                            }
+                        }
+                    }
+
+                    self.stack.push(ret)
+                }
+                LT => {
+                    if pop!(self.stack).lt(&pop!(self.stack)) {
+                        self.stack.push(1.into());
+                    } else {
+                        self.stack.push(0.into())
+                    }
+                }
+                SLT => {
+                    let op1: I256 = pop!(self.stack).into();
+                    let op2: I256 = pop!(self.stack).into();
+
+                    if op1.lt(&op2) {
+                        self.stack.push(1.into());
+                    } else {
+                        self.stack.push(0.into())
+                    }
+                }
+                GT => {
+                    if pop!(self.stack).gt(&pop!(self.stack)) {
+                        self.stack.push(1.into());
+                    } else {
+                        self.stack.push(0.into())
+                    }
+                }
+                SGT => {
+                    let op1: I256 = pop!(self.stack).into();
+                    let op2: I256 = pop!(self.stack).into();
+
+                    if op1.gt(&op2) {
+                        self.stack.push(1.into());
+                    } else {
+                        self.stack.push(0.into())
+                    }
+                }
+                EQ => {
+                    if pop!(self.stack).eq(&pop!(self.stack)) {
+                        self.stack.push(1.into());
+                    } else {
+                        self.stack.push(0.into())
+                    }
+                }
+                ISZERO => {
+                    if pop!(self.stack) == U256::zero() {
+                        self.stack.push(1.into());
+                    } else {
+                        self.stack.push(0.into());
+                    }
+                }
+                AND => {
+                    let r = pop!(self.stack).bitand(pop!(self.stack));
+                    self.stack.push(r);
+                }
+                OR => {
+                    let r = pop!(self.stack).bitand(pop!(self.stack));
+                    self.stack.push(r);
+                }
+                XOR => {
+                    let r = pop!(self.stack).bitand(pop!(self.stack));
+                    self.stack.push(r);
+                }
+                NOT => {
+                    let r = !pop!(self.stack);
+                    self.stack.push(r);
+                }
+                op @ PUSH1..=PUSH32 => {
                     if self.pc + from_base!(PUSH1, op) < self.code.len() {
-                        let o = &self.code[self.pc..self.pc + from_base!(PUSH1, op) + 1];
+                        let o = &self.code[self.pc..self.pc + from_base!(PUSH1, op)];
                         push!(self.stack, o);
                     } else {
                         return Interupt::Exit(Exit::StackUnderflow);
                     }
+
+                    self.pc += from_base!(PUSH1, op) + 1;
                 }
                 op @ DUP1..=DUP16 => {
                     let len = self.stack.len() - 1;
@@ -94,10 +219,14 @@ impl<'a> Machine<'a> {
                     let idx = len - from_base!(SWAP1, op);
                     self.stack.swap(len, idx);
                 }
-                _ => return Interupt::Exit(Exit::NotSupported),
+                SSTORE => {
+                    return Interupt::Yield(Yield::Store(pop!(self.stack), pop!(self.stack)));
+                }
+                op => {
+                    eprintln!("UNSUPPORTED OP: {:x}", op);
+                    return Interupt::Exit(Exit::NotSupported);
+                }
             }
-
-            self.pc += 1;
         }
 
         Interupt::Exit(Exit::Ret)

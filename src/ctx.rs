@@ -1,5 +1,6 @@
 use primitive_types::{H160, U256};
 
+#[derive(Clone)]
 pub struct Context {
     pub target: H160,
     pub caller: H160,

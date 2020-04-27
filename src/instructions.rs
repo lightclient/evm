@@ -30,6 +30,8 @@ pub const SHA3: u8 = 0x20;
 
 pub const POP: u8 = 0x50;
 
+pub const SSTORE: u8 = 0x55;
+
 pub const PUSH1: u8 = 0x60;
 pub const PUSH2: u8 = 0x61;
 pub const PUSH3: u8 = 0x62;
@@ -100,3 +102,4 @@ pub const SWAP16: u8 = 0x9F;
 pub const RETURN: u8 = 0xF3;
 pub const REVERT: u8 = 0xFD;
 pub const INVALID: u8 = 0xFE;
+pub const SELFDESTRUCT: u8 = 0xFF;

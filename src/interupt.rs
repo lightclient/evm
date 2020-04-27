@@ -1,3 +1,5 @@
+use primitive_types::U256;
+
 pub enum Interupt<Y, E> {
     Yield(Y),
     Exit(E),
@@ -8,6 +10,7 @@ pub enum Yield {
     // external
     Call,
     Create,
+    Store(U256, U256),
 }
 
 #[derive(Debug, PartialEq)]
