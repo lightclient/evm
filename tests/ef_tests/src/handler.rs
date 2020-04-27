@@ -53,16 +53,32 @@ pub trait Handler {
     }
 }
 
-pub struct VmHandler;
+macro_rules! make_handler {
+    ($i: ident, $n: expr) => {
+        pub struct $i;
 
-impl Handler for VmHandler {
-    type Case = cases::Vm;
+        impl Handler for $i {
+            type Case = cases::Vm;
 
-    fn runner_name() -> &'static str {
-        "VM"
-    }
+            fn runner_name() -> &'static str {
+                "VM"
+            }
 
-    fn handler_name() -> String {
-        "ArithmeticTest".into()
-    }
+            fn handler_name() -> String {
+                $n.into()
+            }
+        }
+    };
 }
+
+make_handler!(VmArithmeticHandler, "ArithmeticTest");
+make_handler!(VmBitwiseOperationsHandler, "BitwiseLogicOperation");
+make_handler!(VmBlockInfoHandler, "BlockInfoTest");
+make_handler!(VmEnvironmentalInfoHandler, "EnvironmentalInfo");
+make_handler!(VmLogHandler, "LogTest");
+make_handler!(VmPerformanceHandler, "Performance");
+make_handler!(VmPushDupSwapHandler, "PushDupSwapTest");
+make_handler!(VmRandomHandler, "VmRandomHandler");
+make_handler!(VmSha3Handler, "Sha3Test");
+make_handler!(VmSystemOperationsHandler, "SystemOperations");
+make_handler!(VmTestsHandler, "Tests");
