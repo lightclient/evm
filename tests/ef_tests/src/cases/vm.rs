@@ -117,7 +117,7 @@ impl Case for Vm {
         rt.execute(ctx);
 
         if self.post.is_none() {
-            return Err(Error::NotEqual(String::new()));
+            return Ok(());
         }
 
         let post = self.post.clone().unwrap();

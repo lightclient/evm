@@ -28,8 +28,11 @@ pub const SAR: u8 = 0x1D;
 
 pub const SHA3: u8 = 0x20;
 
+pub const CALLDATALOAD: u8 = 0x35;
+
 pub const POP: u8 = 0x50;
 
+pub const SLOAD: u8 = 0x54;
 pub const SSTORE: u8 = 0x55;
 
 pub const PUSH1: u8 = 0x60;

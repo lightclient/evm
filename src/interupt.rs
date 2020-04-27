@@ -12,6 +12,8 @@ pub enum Yield {
     Call,
     Create,
     Store(U256, U256),
+    Load(U256),
+    CalldataLoad(U256),
 }
 
 #[derive(Debug, PartialEq)]

@@ -51,13 +51,9 @@ impl<'a> Machine<'a> {
     }
 
     pub fn run(&mut self) -> Interupt<Yield, Exit> {
-        println!("code: {:X?}", self.code);
         while self.pc < self.code.len() {
             let op = self.code[self.pc];
             self.pc += 1;
-
-            println!("stack: {:?}", self.stack);
-            println!("op: {:X?}", op);
 
             match op {
                 STOP => {
@@ -107,8 +103,6 @@ impl<'a> Machine<'a> {
                     let r: U256 = r
                         .try_into()
                         .expect("op3 is less than U256::max_value(), thus it never overflows");
-
-                    println!("ADDMOD {:?} {:?} {:?} => {:?}", op1, op2, op3, r);
 
                     self.stack.push(r);
                 }
@@ -232,7 +226,6 @@ impl<'a> Machine<'a> {
                 op @ PUSH1..=PUSH32 => {
                     if self.pc + from_base!(PUSH1, op) < self.code.len() {
                         let o = &self.code[self.pc..self.pc + from_base!(PUSH1, op) + 1];
-                        println!("pushing: {:?}", o);
                         push!(self.stack, o);
                     } else {
                         return Interupt::Exit(Exit::StackUnderflow);
@@ -253,8 +246,14 @@ impl<'a> Machine<'a> {
                     let idx = len - from_base!(SWAP1, op);
                     self.stack.swap(len, idx);
                 }
+                SLOAD => {
+                    return Interupt::Yield(Yield::Load(pop!(self.stack)));
+                }
                 SSTORE => {
                     return Interupt::Yield(Yield::Store(pop!(self.stack), pop!(self.stack)));
+                }
+                CALLDATALOAD => {
+                    return Interupt::Yield(Yield::CalldataLoad(pop!(self.stack)));
                 }
                 op => {
                     eprintln!("UNSUPPORTED OP: {:x}", op);

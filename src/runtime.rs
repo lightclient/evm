@@ -4,7 +4,7 @@ use crate::env::Environment;
 use crate::interupt::{Interupt, Yield};
 use crate::machine::Machine;
 
-use primitive_types::H160;
+use primitive_types::{H160, U256};
 use std::collections::BTreeMap;
 
 pub struct Runtime {
@@ -23,10 +23,20 @@ impl Runtime {
         loop {
             match m.run() {
                 Interupt::Yield(y) => match y {
+                    Yield::Load(k) => {
+                        let account = self.state.get_mut(&ctx.target).unwrap();
+                        match account.storage.get(&k) {
+                            Some(v) => m.stack.push(*v),
+                            None => m.stack.push(0.into()),
+                        }
+                    }
                     Yield::Store(k, v) => {
                         let account = self.state.get_mut(&ctx.target).unwrap();
-                        println!("storing ({:?}, {:?})", k, v);
                         account.storage.insert(k, v);
+                    }
+                    Yield::CalldataLoad(p) => {
+                        let p: usize = p.low_u64() as usize;
+                        m.stack.push(ctx.data[p..p + 32].into());
                     }
                     _ => unimplemented!(),
                 },
