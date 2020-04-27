@@ -4,7 +4,8 @@ use crate::instructions::*;
 use crate::interupt::{Exit, Interupt, Yield};
 use crate::utils::I256;
 
-use primitive_types::U256;
+use primitive_types::{U256, U512};
+use std::convert::TryInto;
 use std::ops::{BitAnd, BitOr, BitXor};
 
 macro_rules! pop {
@@ -50,9 +51,13 @@ impl<'a> Machine<'a> {
     }
 
     pub fn run(&mut self) -> Interupt<Yield, Exit> {
+        println!("code: {:X?}", self.code);
         while self.pc < self.code.len() {
             let op = self.code[self.pc];
             self.pc += 1;
+
+            println!("stack: {:?}", self.stack);
+            println!("op: {:X?}", op);
 
             match op {
                 STOP => {
@@ -88,23 +93,51 @@ impl<'a> Machine<'a> {
                 SMOD => {
                     let op1: I256 = pop!(self.stack).into();
                     let op2: I256 = pop!(self.stack).into();
-                    let r = op1.checked_rem(op2).unwrap_or(I256::zero());
-                    self.stack.push(r.into())
+                    let r: I256 = op1.checked_rem(op2).unwrap_or(I256::zero());
+
+                    self.stack.push(r.into());
                 }
                 ADDMOD => {
-                    let op1 = pop!(self.stack);
-                    let op2 = pop!(self.stack);
-                    let op3 = pop!(self.stack);
+                    let op1: U512 = pop!(self.stack).into();
+                    let op2: U512 = pop!(self.stack).into();
+                    let op3: U512 = pop!(self.stack).into();
+
                     let (mut r, _) = op1.overflowing_add(op2);
                     r = r.checked_rem(op3).unwrap_or(0.into());
+                    let r: U256 = r
+                        .try_into()
+                        .expect("op3 is less than U256::max_value(), thus it never overflows");
+
+                    println!("ADDMOD {:?} {:?} {:?} => {:?}", op1, op2, op3, r);
+
                     self.stack.push(r);
                 }
                 MULMOD => {
-                    let op1 = pop!(self.stack);
-                    let op2 = pop!(self.stack);
-                    let op3 = pop!(self.stack);
+                    let op1: U512 = pop!(self.stack).into();
+                    let op2: U512 = pop!(self.stack).into();
+                    let op3: U512 = pop!(self.stack).into();
+
                     let (mut r, _) = op1.overflowing_mul(op2);
                     r = r.checked_rem(op3).unwrap_or(0.into());
+                    let r: U256 = r
+                        .try_into()
+                        .expect("op3 is less than U256::max_value(), thus it never overflows");
+
+                    self.stack.push(r);
+                }
+                EXP => {
+                    let mut op1 = pop!(self.stack);
+                    let mut op2 = pop!(self.stack);
+                    let mut r: U256 = 1.into();
+
+                    while op2 != 0.into() {
+                        if op2 & 1.into() != 0.into() {
+                            r = r.overflowing_mul(op1).0;
+                        }
+                        op2 = op2 >> 1;
+                        op1 = op1.overflowing_mul(op1).0;
+                    }
+
                     self.stack.push(r);
                 }
                 SIGEXTEND => {
@@ -199,6 +232,7 @@ impl<'a> Machine<'a> {
                 op @ PUSH1..=PUSH32 => {
                     if self.pc + from_base!(PUSH1, op) < self.code.len() {
                         let o = &self.code[self.pc..self.pc + from_base!(PUSH1, op) + 1];
+                        println!("pushing: {:?}", o);
                         push!(self.stack, o);
                     } else {
                         return Interupt::Exit(Exit::StackUnderflow);

@@ -1,5 +1,6 @@
 use primitive_types::U256;
 
+#[derive(Debug)]
 pub enum Interupt<Y, E> {
     Yield(Y),
     Exit(E),

@@ -25,11 +25,15 @@ impl Runtime {
                 Interupt::Yield(y) => match y {
                     Yield::Store(k, v) => {
                         let account = self.state.get_mut(&ctx.target).unwrap();
+                        println!("storing ({:?}, {:?})", k, v);
                         account.storage.insert(k, v);
                     }
                     _ => unimplemented!(),
                 },
-                _ => break,
+                i => {
+                    println!("breaking: {:?}", i);
+                    break;
+                }
             }
         }
     }
