@@ -19,7 +19,9 @@ pub trait Handler {
         Self::run_specified_tests(None);
     }
 
-    fn run_specified_tests(tests: Option<Vec<&str>>) {
+    fn run_specified_tests<T: Into<Option<Vec<&'static str>>>>(tests: T) {
+        let tests: Option<Vec<&str>> = tests.into();
+
         let handler_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("fixtures")
             .join(format!("{}{}", Self::runner_name(), "Tests"))

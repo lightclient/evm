@@ -1,7 +1,7 @@
 use crate::account::Account;
 use crate::ctx::Context;
 use crate::env::Environment;
-use crate::interupt::{Interupt, Yield};
+use crate::interupt::{Exit, Interupt, Yield};
 use crate::machine::Machine;
 
 use log::info;
@@ -44,6 +44,17 @@ impl Runtime {
                     }
                     _ => unimplemented!(),
                 },
+                Interupt::Exit(Exit::SelfDestruct(target)) => {
+                    let account = self.state.remove(&ctx.target).unwrap();
+                    self.state.remove(&ctx.target);
+                    let raw_target: [u8; 32] = target.into();
+                    let target = self
+                        .state
+                        .entry(H160::from_slice(&raw_target[12..32]))
+                        .or_default();
+
+                    target.balance += account.balance;
+                }
                 _ => break,
             }
         }

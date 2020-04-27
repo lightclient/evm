@@ -54,7 +54,7 @@ impl<'a> Machine<'a> {
     pub fn run(&mut self) -> Interupt<Yield, Exit> {
         while self.pc < self.code.len() {
             trace!(
-                "pc: {:x}, code[pc+1]: {:x?}, stack: {:x?}, mem: {:x?}",
+                "pc: {}, code[pc+1]: {:x?}, stack: {:x?}, mem: {:x?}",
                 self.pc,
                 &self.code.get(self.pc + 1),
                 self.stack,
@@ -64,7 +64,7 @@ impl<'a> Machine<'a> {
             let op = self.code[self.pc];
             self.pc += 1;
 
-            debug!("{}", op_to_str(op));
+            debug!("{}({:x})", op_to_str(op), op);
 
             match op {
                 STOP => {
@@ -245,18 +245,26 @@ impl<'a> Machine<'a> {
                     self.pc += from_base!(PUSH1, op) + 1;
                 }
                 op @ DUP1..=DUP16 => {
-                    let len = self.stack.len() - 1;
-                    let idx = len - from_base!(DUP1, op);
+                    let dup_idx = from_base!(DUP1, op);
 
-                    match self.stack.get(idx).map(|e| *e) {
-                        Some(o) => self.stack.push(o),
-                        None => return Interupt::Exit(Exit::StackUnderflow),
+                    if !self.stack.is_empty() && dup_idx < self.stack.len() {
+                        let idx = self.stack.len() - from_base!(DUP1, op) - 1;
+                        let e = self.stack[idx];
+                        self.stack.push(e);
+                    } else {
+                        return Interupt::Exit(Exit::StackUnderflow);
                     }
                 }
                 op @ SWAP1..=SWAP16 => {
-                    let len = self.stack.len() - 1;
-                    let idx = len - from_base!(SWAP1, op);
-                    self.stack.swap(len, idx);
+                    let swap_idx = from_base!(SWAP1, op) + 1;
+
+                    if !self.stack.is_empty() && swap_idx < self.stack.len() {
+                        let top = self.stack.len() - 1;
+                        let idx = top - swap_idx;
+                        self.stack.swap(top, idx);
+                    } else {
+                        return Interupt::Exit(Exit::StackUnderflow);
+                    }
                 }
                 SLOAD => {
                     return Interupt::Yield(Yield::Load(pop!(self.stack)));
@@ -266,6 +274,9 @@ impl<'a> Machine<'a> {
                 }
                 CALLDATALOAD => {
                     return Interupt::Yield(Yield::CalldataLoad(pop!(self.stack)));
+                }
+                SELFDESTRUCT => {
+                    return Interupt::Exit(Exit::SelfDestruct(pop!(self.stack)));
                 }
                 op => {
                     error!("UNSUPPORTED OP: {}({:x})", op_to_str(op), op);

@@ -122,46 +122,46 @@ impl Case for Vm {
 
         let post = self.post.clone().unwrap();
 
-        for (h, a) in rt.state {
-            let b = post.get(&h);
+        for (address, expected) in post {
+            let actual = rt.state.get(&address);
 
-            if b.is_none() {
+            if actual.is_none() {
                 return Err(Error::NotEqual(format!(
-                    "Couldn't load account from json: {}",
-                    h
+                    "Couldn't load account from json: {:?}",
+                    address
                 )));
             }
 
-            let b = b.unwrap();
+            let actual = actual.unwrap();
 
-            if a.code != b.code {
+            if actual.code != expected.code {
                 return Err(Error::NotEqual(format!(
                     "Got code: {:?}, expected: {:?}",
-                    a.code, b.code
+                    actual.code, expected.code
                 )));
             }
 
-            if a.nonce != b.nonce {
+            if actual.nonce != expected.nonce {
                 return Err(Error::NotEqual(format!(
                     "Got nonce: {:?}, expected: {:?}",
-                    a.nonce, b.nonce
+                    actual.nonce, expected.nonce
                 )));
             }
 
-            for (k, v) in b.storage.clone() {
-                match a.storage.get(&k) {
+            for (k, ev) in expected.storage.clone() {
+                match actual.storage.get(&k) {
                     Some(av) => {
-                        if v != *av {
+                        if ev != *av {
                             return Err(Error::NotEqual(format!(
                                 "Storage mismatch at {:?}. Got: {:?}, expected: {:?}",
-                                k, av, v
+                                k, av, ev
                             )));
                         }
                     }
                     None => {
                         return Err(Error::NotEqual(format!(
                             "Storage missing at {:?}. Expected: {:?}",
-                            k, v
+                            k, ev
                         )))
                     }
                 }

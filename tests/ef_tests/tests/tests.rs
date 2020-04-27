@@ -6,7 +6,6 @@ fn vm_arithmetic_tests() {
     VmArithmeticHandler::run();
 }
 
-#[ignore]
 #[test]
 fn vm_bitwise_operations_tests() {
     VmBitwiseOperationsHandler::run();
@@ -36,7 +35,6 @@ fn vm_performance_tests() {
     VmPerformanceHandler::run();
 }
 
-#[ignore]
 #[test]
 fn vm_push_dup_swap_tests() {
     VmPushDupSwapHandler::run();

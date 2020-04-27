@@ -142,7 +142,7 @@ pub fn op_to_str(op: u8) -> &'static str {
         SSTORE => "SSTORE",
         PUSH1..=PUSH32 => "PUSH",
         DUP1..=DUP16 => "DUP",
-        SWAP1..=SWAP16 => "DUP",
+        SWAP1..=SWAP16 => "SWAP",
         RETURN => "RETURN",
         REVERT => "REVERT",
         INVALID => "INVALID",

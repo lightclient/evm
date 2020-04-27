@@ -21,7 +21,7 @@ pub enum Exit {
     // successful
     Stop,
     Ret,
-    SelfDestruct,
+    SelfDestruct(U256),
 
     // normal error
     StackUnderflow,

@@ -1,7 +1,7 @@
 use primitive_types::U256;
 use std::collections::BTreeMap;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Account {
     pub balance: U256,
     pub code: Vec<u8>,
