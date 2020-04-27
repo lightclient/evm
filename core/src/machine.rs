@@ -239,6 +239,23 @@ impl<'a> Machine<'a> {
                     let op: [u8; 32] = pop!(self.stack).into();
                     self.stack.push(op[idx as usize].into());
                 }
+                TIMESTAMP => {
+                    self.stack.push(self.env.timestamp);
+                }
+                COINBASE => {
+                    let mut coinbase = [0; 32];
+                    coinbase[12..32].copy_from_slice(self.env.coinbase.as_bytes());
+                    self.stack.push(coinbase.into());
+                }
+                NUMBER => {
+                    self.stack.push(self.env.block_number);
+                }
+                DIFFICULTY => {
+                    self.stack.push(self.env.difficulty);
+                }
+                GASLIMIT => {
+                    self.stack.push(self.env.gas_limit);
+                }
                 op @ PUSH1..=PUSH32 => {
                     if self.pc + from_base!(PUSH1, op) < self.code.len() {
                         let o = &self.code[self.pc..self.pc + from_base!(PUSH1, op) + 1];

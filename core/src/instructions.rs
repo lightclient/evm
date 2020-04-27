@@ -30,6 +30,13 @@ pub const SHA3: u8 = 0x20;
 
 pub const CALLDATALOAD: u8 = 0x35;
 
+pub const BLOCKHASH: u8 = 0x40;
+pub const COINBASE: u8 = 0x41;
+pub const TIMESTAMP: u8 = 0x42;
+pub const NUMBER: u8 = 0x43;
+pub const DIFFICULTY: u8 = 0x44;
+pub const GASLIMIT: u8 = 0x45;
+
 pub const POP: u8 = 0x50;
 
 pub const SLOAD: u8 = 0x54;
@@ -138,6 +145,12 @@ pub fn op_to_str(op: u8) -> &'static str {
         SHA3 => "SHA3",
         CALLDATALOAD => "CALLDATALOAD",
         POP => "POP",
+        BLOCKHASH => "BLOCKHASH",
+        COINBASE => "COINBASE",
+        TIMESTAMP => "TIMESTAMP",
+        NUMBER => "NUMBER",
+        DIFFICULTY => "DIFFICULTY",
+        GASLIMIT => "GASLIMIT",
         SLOAD => "SLOAD",
         SSTORE => "SSTORE",
         PUSH1..=PUSH32 => "PUSH",
