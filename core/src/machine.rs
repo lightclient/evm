@@ -234,6 +234,11 @@ impl<'a> Machine<'a> {
                     let r = !pop!(self.stack);
                     self.stack.push(r);
                 }
+                BYTE => {
+                    let idx = pop!(self.stack).low_u64().checked_rem(32).unwrap_or(0);
+                    let op: [u8; 32] = pop!(self.stack).into();
+                    self.stack.push(op[idx as usize].into());
+                }
                 op @ PUSH1..=PUSH32 => {
                     if self.pc + from_base!(PUSH1, op) < self.code.len() {
                         let o = &self.code[self.pc..self.pc + from_base!(PUSH1, op) + 1];
