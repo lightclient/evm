@@ -198,7 +198,7 @@ impl<'a> Machine<'a> {
                 }
                 op @ PUSH1..=PUSH32 => {
                     if self.pc + from_base!(PUSH1, op) < self.code.len() {
-                        let o = &self.code[self.pc..self.pc + from_base!(PUSH1, op)];
+                        let o = &self.code[self.pc..self.pc + from_base!(PUSH1, op) + 1];
                         push!(self.stack, o);
                     } else {
                         return Interupt::Exit(Exit::StackUnderflow);

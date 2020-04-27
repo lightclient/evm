@@ -15,7 +15,7 @@ pub trait Handler {
 
     fn handler_name() -> String;
 
-    fn run() {
+    fn run(whitelist: Option<Vec<&str>>) {
         let handler_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("fixtures")
             .join(format!("{}{}", Self::runner_name(), "Tests"))
@@ -27,6 +27,13 @@ pub trait Handler {
                 entry
                     .ok()
                     .filter(|e| e.file_type().map(|ty| !ty.is_dir()).unwrap_or(false))
+                    .filter(|e| {
+                        if let Some(tests) = whitelist.clone() {
+                            tests.contains(&e.file_name().to_str().unwrap())
+                        } else {
+                            true
+                        }
+                    })
             })
             .map(|test_case| {
                 let path = test_case.path();
