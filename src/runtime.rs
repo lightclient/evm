@@ -4,7 +4,7 @@ use crate::env::Environment;
 use crate::interupt::{Interupt, Yield};
 use crate::machine::Machine;
 
-use primitive_types::{H160, U256};
+use primitive_types::H160;
 use std::collections::BTreeMap;
 
 pub struct Runtime {

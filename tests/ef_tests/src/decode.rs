@@ -1,7 +1,5 @@
 use crate::error::Error;
 
-use hex::FromHex;
-use primitive_types::H160;
 use serde::{Deserialize, Deserializer};
 use std::fs;
 use std::path::Path;

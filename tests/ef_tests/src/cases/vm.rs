@@ -134,13 +134,6 @@ impl Case for Vm {
 
             let b = b.unwrap();
 
-            if a.balance != b.balance {
-                return Err(Error::NotEqual(format!(
-                    "Got balance: {:?}, expected: {:?}",
-                    a.balance, b.balance
-                )));
-            }
-
             if a.code != b.code {
                 return Err(Error::NotEqual(format!(
                     "Got code: {:?}, expected: {:?}",

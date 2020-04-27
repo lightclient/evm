@@ -212,11 +212,11 @@ impl<'a> Machine<'a> {
                     self.stack.push(r);
                 }
                 OR => {
-                    let r = pop!(self.stack).bitand(pop!(self.stack));
+                    let r = pop!(self.stack).bitor(pop!(self.stack));
                     self.stack.push(r);
                 }
                 XOR => {
-                    let r = pop!(self.stack).bitand(pop!(self.stack));
+                    let r = pop!(self.stack).bitxor(pop!(self.stack));
                     self.stack.push(r);
                 }
                 NOT => {
@@ -236,8 +236,9 @@ impl<'a> Machine<'a> {
                 op @ DUP1..=DUP16 => {
                     let len = self.stack.len() - 1;
                     let idx = len - from_base!(DUP1, op);
-                    match self.stack.get(idx) {
-                        Some(o) => push!(self.stack, o),
+
+                    match self.stack.get(idx).map(|e| *e) {
+                        Some(o) => self.stack.push(o),
                         None => return Interupt::Exit(Exit::StackUnderflow),
                     }
                 }
