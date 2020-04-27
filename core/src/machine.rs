@@ -4,6 +4,7 @@ use crate::instructions::*;
 use crate::interupt::{Exit, Interupt, Yield};
 use crate::utils::I256;
 
+use log::{debug, error, info, trace, warn};
 use primitive_types::{U256, U512};
 use std::convert::TryInto;
 use std::ops::{BitAnd, BitOr, BitXor};
@@ -52,8 +53,18 @@ impl<'a> Machine<'a> {
 
     pub fn run(&mut self) -> Interupt<Yield, Exit> {
         while self.pc < self.code.len() {
+            trace!(
+                "pc: {:x}, code[pc+1]: {:x?}, stack: {:x?}, mem: {:x?}",
+                self.pc,
+                &self.code.get(self.pc + 1),
+                self.stack,
+                self.memory
+            );
+
             let op = self.code[self.pc];
             self.pc += 1;
+
+            debug!("{}", op_to_str(op));
 
             match op {
                 STOP => {
@@ -257,7 +268,7 @@ impl<'a> Machine<'a> {
                     return Interupt::Yield(Yield::CalldataLoad(pop!(self.stack)));
                 }
                 op => {
-                    eprintln!("UNSUPPORTED OP: {:x}", op);
+                    error!("UNSUPPORTED OP: {}({:x})", op_to_str(op), op);
                     return Interupt::Exit(Exit::NotSupported);
                 }
             }

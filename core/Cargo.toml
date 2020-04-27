@@ -5,4 +5,5 @@ authors = ["Matt Garnett <crates@garnett.dev>"]
 edition = "2018"
 
 [dependencies]
+log = "0.4.0"
 primitive-types = "0.7.0"

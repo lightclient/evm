@@ -4,6 +4,7 @@ use crate::env::Environment;
 use crate::interupt::{Interupt, Yield};
 use crate::machine::Machine;
 
+use log::info;
 use primitive_types::H160;
 use std::collections::BTreeMap;
 
@@ -21,7 +22,10 @@ impl Runtime {
         );
 
         loop {
-            match m.run() {
+            let i = m.run();
+            info!("interupt reason: {:?}", i);
+
+            match i {
                 Interupt::Yield(y) => match y {
                     Yield::Load(k) => {
                         let account = self.state.get_mut(&ctx.target).unwrap();
@@ -40,10 +44,7 @@ impl Runtime {
                     }
                     _ => unimplemented!(),
                 },
-                i => {
-                    println!("breaking: {:?}", i);
-                    break;
-                }
+                _ => break,
             }
         }
     }

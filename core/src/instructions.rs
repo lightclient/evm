@@ -106,3 +106,48 @@ pub const RETURN: u8 = 0xF3;
 pub const REVERT: u8 = 0xFD;
 pub const INVALID: u8 = 0xFE;
 pub const SELFDESTRUCT: u8 = 0xFF;
+
+pub fn op_to_str(op: u8) -> &'static str {
+    match op {
+        STOP => "STOP",
+        ADD => "ADD",
+        MUL => "MUL",
+        SUB => "SUB",
+        DIV => "DIV",
+        SDIV => "SDIV",
+        MOD => "MOD",
+        SMOD => "SMOD",
+        ADDMOD => "ADDMOD",
+        MULMOD => "MULMOD",
+        EXP => "EXP",
+        SIGEXTEND => "SIGEXTEND",
+        LT => "LT",
+        GT => "GT",
+        SLT => "SLT",
+        SGT => "SGT",
+        EQ => "EQ",
+        ISZERO => "ISZERO",
+        AND => "AND",
+        OR => "OR",
+        XOR => "XOR",
+        NOT => "NOT",
+        BYTE => "BYTE",
+        SHL => "SHL",
+        SHR => "SHR",
+        SAR => "SAR",
+        SHA3 => "SHA3",
+        CALLDATALOAD => "CALLDATALOAD",
+        POP => "POP",
+        SLOAD => "SLOAD",
+        SSTORE => "SSTORE",
+        PUSH1..=PUSH32 => "PUSH",
+        DUP1..=DUP16 => "DUP",
+        SWAP1..=SWAP16 => "DUP",
+        RETURN => "RETURN",
+        REVERT => "REVERT",
+        INVALID => "INVALID",
+        SELFDESTRUCT => "SELFDESTRUCT",
+
+        _ => "UNKNOWN",
+    }
+}

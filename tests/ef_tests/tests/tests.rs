@@ -1,4 +1,5 @@
 use ef_tests::*;
+use test_env_log::test;
 
 #[test]
 fn vm_arithmetic_tests() {
