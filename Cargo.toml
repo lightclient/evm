@@ -1,8 +1,5 @@
-[package]
-name = "fast_evm"
-version = "0.0.0"
-authors = ["Matt Garnett <crates@garnett.dev>"]
-edition = "2018"
-
-[dependencies]
-primitive-types = "0.7.0"
+[workspace]
+members = [
+	"core",
+	"tests/ef_tests"
+]

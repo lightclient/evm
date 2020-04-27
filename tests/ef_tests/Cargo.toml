@@ -5,7 +5,7 @@ authors = ["Matt Garnett <crates@garnett.dev>"]
 edition = "2018"
 
 [dependencies]
-fast_evm = { path = "../../" }
+fast_evm = { path = "../../core" }
 hex = "0.4.2"
 primitive-types = { version = "0.7.0", features = ["serde", "rustc-hex"] }
 serde = { version = "1.0", features = ["derive"] }
