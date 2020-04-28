@@ -87,6 +87,7 @@ impl Case for Vm {
         let env = Environment {
             coinbase: self.env.current_coinbase,
             difficulty: self.env.current_difficulty,
+            gas_price: self.exec.gas_price,
             gas_limit: self.env.current_gas_limit,
             block_number: self.env.current_number.into(),
             timestamp: self.env.current_timestamp.into(),

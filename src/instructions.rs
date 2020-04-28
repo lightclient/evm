@@ -28,7 +28,18 @@ pub const SAR: u8 = 0x1D;
 
 pub const SHA3: u8 = 0x20;
 
+pub const ADDRESS: u8 = 0x30;
+pub const BALANCE: u8 = 0x31;
+pub const ORIGIN: u8 = 0x32;
+pub const CALLER: u8 = 0x33;
+pub const CALLVALUE: u8 = 0x34;
 pub const CALLDATALOAD: u8 = 0x35;
+pub const CALLDATASIZE: u8 = 0x36;
+pub const CALLDATACOPY: u8 = 0x37;
+pub const CODESIZE: u8 = 0x38;
+pub const CODECOPY: u8 = 0x39;
+
+pub const GASPRICE: u8 = 0x3A;
 
 pub const BLOCKHASH: u8 = 0x40;
 pub const COINBASE: u8 = 0x41;
@@ -38,6 +49,10 @@ pub const DIFFICULTY: u8 = 0x44;
 pub const GASLIMIT: u8 = 0x45;
 
 pub const POP: u8 = 0x50;
+
+pub const MLOAD: u8 = 0x51;
+pub const MSTORE: u8 = 0x52;
+pub const MSTORE8: u8 = 0x53;
 
 pub const SLOAD: u8 = 0x54;
 pub const SSTORE: u8 = 0x55;
@@ -143,7 +158,17 @@ pub fn op_to_str(op: u8) -> &'static str {
         SHR => "SHR",
         SAR => "SAR",
         SHA3 => "SHA3",
+        ADDRESS => "ADDRESS",
+        BALANCE => "BALANCE",
+        ORIGIN => "ORIGIN",
+        CALLER => "CALLER",
+        CALLVALUE => "CALLVALUE",
         CALLDATALOAD => "CALLDATALOAD",
+        CALLDATASIZE => "CALLDATASIZE",
+        CALLDATACOPY => "CALLDATACOPY",
+        CODESIZE => "CODESIZE",
+        CODECOPY => "CODECOPY",
+        GASPRICE => "GASPRICE",
         POP => "POP",
         BLOCKHASH => "BLOCKHASH",
         COINBASE => "COINBASE",
@@ -151,6 +176,9 @@ pub fn op_to_str(op: u8) -> &'static str {
         NUMBER => "NUMBER",
         DIFFICULTY => "DIFFICULTY",
         GASLIMIT => "GASLIMIT",
+        MLOAD => "MLOAD",
+        MSTORE => "MSTORE",
+        MSTORE8 => "MSTORE8",
         SLOAD => "SLOAD",
         SSTORE => "SSTORE",
         PUSH1..=PUSH32 => "PUSH",

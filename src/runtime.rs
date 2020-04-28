@@ -4,8 +4,9 @@ use crate::env::Environment;
 use crate::interupt::{Exit, Interupt, Yield};
 use crate::machine::Machine;
 
-use log::info;
+use log::{info, trace};
 use primitive_types::H160;
+use std::cmp::min;
 use std::collections::BTreeMap;
 
 pub struct Runtime {
@@ -14,7 +15,7 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    pub fn execute(&mut self, ctx: Context) {
+    pub fn execute(&mut self, ctx: Context) -> Exit {
         let mut m = Machine::new(
             self.state.get(&ctx.target).unwrap().code.clone(),
             ctx.clone(),
@@ -38,10 +39,6 @@ impl Runtime {
                         let account = self.state.get_mut(&ctx.target).unwrap();
                         account.storage.insert(k, v);
                     }
-                    Yield::CalldataLoad(p) => {
-                        let p: usize = p.low_u64() as usize;
-                        m.stack.push(ctx.data[p..p + 32].into());
-                    }
                     _ => unimplemented!(),
                 },
                 Interupt::Exit(Exit::SelfDestruct(target)) => {
@@ -55,7 +52,7 @@ impl Runtime {
 
                     target.balance += account.balance;
                 }
-                _ => break,
+                Interupt::Exit(e) => return e,
             }
         }
     }

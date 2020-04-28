@@ -6,6 +6,7 @@ use crate::utils::I256;
 
 use log::{debug, error, info, trace, warn};
 use primitive_types::{U256, U512};
+use std::cmp::min;
 use std::convert::TryInto;
 use std::ops::{BitAnd, BitOr, BitXor};
 
@@ -44,7 +45,7 @@ impl<'a> Machine<'a> {
         Self {
             pc: 0,
             stack: vec![],
-            memory: vec![],
+            memory: vec![0; 1024],
             code,
             ctx,
             env,
@@ -54,11 +55,10 @@ impl<'a> Machine<'a> {
     pub fn run(&mut self) -> Interupt<Yield, Exit> {
         while self.pc < self.code.len() {
             trace!(
-                "pc: {}, code[pc+1]: {:x?}, stack: {:x?}, mem: {:x?}",
+                "pc: {}, code[pc+1]: {:x?}, stack: {:x?}",
                 self.pc,
                 &self.code.get(self.pc + 1),
                 self.stack,
-                self.memory
             );
 
             let op = self.code[self.pc];
@@ -67,9 +67,7 @@ impl<'a> Machine<'a> {
             debug!("{}({:x})", op_to_str(op), op);
 
             match op {
-                STOP => {
-                    return Interupt::Exit(Exit::Stop);
-                }
+                STOP => return Interupt::Exit(Exit::Stop),
                 ADD => {
                     let (r, _) = pop!(self.stack).overflowing_add(pop!(self.stack));
                     self.stack.push(r);
@@ -239,22 +237,24 @@ impl<'a> Machine<'a> {
                     let op: [u8; 32] = pop!(self.stack).into();
                     self.stack.push(op[idx as usize].into());
                 }
-                TIMESTAMP => {
-                    self.stack.push(self.env.timestamp);
+                TIMESTAMP => self.stack.push(self.env.timestamp),
+                COINBASE => self.stack.push(self.env.coinbase.as_bytes().into()),
+                NUMBER => self.stack.push(self.env.block_number),
+                DIFFICULTY => self.stack.push(self.env.difficulty),
+                GASLIMIT => self.stack.push(self.env.gas_limit),
+                POP => {
+                    let _ = pop!(self.stack);
                 }
-                COINBASE => {
-                    let mut coinbase = [0; 32];
-                    coinbase[12..32].copy_from_slice(self.env.coinbase.as_bytes());
-                    self.stack.push(coinbase.into());
-                }
-                NUMBER => {
-                    self.stack.push(self.env.block_number);
-                }
-                DIFFICULTY => {
-                    self.stack.push(self.env.difficulty);
-                }
-                GASLIMIT => {
-                    self.stack.push(self.env.gas_limit);
+                MLOAD => {
+                    let idx = pop!(self.stack).low_u64() as usize;
+                    let mut ret = [0; 32];
+
+                    if idx < self.memory.len() {
+                        let mem_len = self.memory.len();
+                        ret.copy_from_slice(&self.memory[idx..min(idx + 32, mem_len)]);
+                    }
+
+                    self.stack.push(ret.into());
                 }
                 op @ PUSH1..=PUSH32 => {
                     if self.pc + from_base!(PUSH1, op) < self.code.len() {
@@ -288,18 +288,85 @@ impl<'a> Machine<'a> {
                         return Interupt::Exit(Exit::StackUnderflow);
                     }
                 }
-                SLOAD => {
-                    return Interupt::Yield(Yield::Load(pop!(self.stack)));
-                }
-                SSTORE => {
-                    return Interupt::Yield(Yield::Store(pop!(self.stack), pop!(self.stack)));
-                }
+                SLOAD => return Interupt::Yield(Yield::Load(pop!(self.stack))),
+                SSTORE => return Interupt::Yield(Yield::Store(pop!(self.stack), pop!(self.stack))),
+                ADDRESS => self.stack.push(self.ctx.target.as_bytes().into()),
+                BALANCE => {}
+                ORIGIN => self.stack.push(self.ctx.origin.as_bytes().into()),
+                CALLER => self.stack.push(self.ctx.caller.as_bytes().into()),
+                CALLVALUE => self.stack.push(self.ctx.value),
                 CALLDATALOAD => {
-                    return Interupt::Yield(Yield::CalldataLoad(pop!(self.stack)));
+                    let begin = pop!(self.stack);
+                    let mut ret = [0u8; 32];
+
+                    if begin <= usize::max_value().into() {
+                        let begin = begin.as_usize();
+
+                        if begin < self.ctx.data.len() {
+                            let end = match begin.checked_add(32) {
+                                Some(end) => min(end, self.ctx.data.len()),
+                                None => min(usize::max_value(), self.ctx.data.len()),
+                            };
+
+                            trace!(
+                                "Loading calldata[{}..{}], calldata len: {}",
+                                begin,
+                                end,
+                                self.ctx.data.len()
+                            );
+
+                            ret[0..(end - begin)].copy_from_slice(&self.ctx.data[begin..end]);
+                        }
+                    }
+
+                    self.stack.push(ret.into());
                 }
-                SELFDESTRUCT => {
-                    return Interupt::Exit(Exit::SelfDestruct(pop!(self.stack)));
+                CALLDATASIZE => self.stack.push(self.ctx.data.len().into()),
+                CALLDATACOPY => {
+                    let mem_begin = pop!(self.stack).low_u64() as usize;
+                    let data_begin = pop!(self.stack).low_u64() as usize;
+                    let len = pop!(self.stack).low_u64() as usize;
+
+                    if self.ctx.data.len() < data_begin {
+                        self.stack.push(0.into());
+                    } else {
+                        let (mem_end, _) = mem_begin.overflowing_add(len);
+
+                        if self.memory.len() < mem_end {
+                            self.memory.resize(1024, 0);
+                        }
+
+                        let (data_end, f) = data_begin.overflowing_add(len);
+                        let data_end = if f { self.ctx.data.len() } else { data_end };
+
+                        self.memory[mem_begin..mem_end]
+                            .copy_from_slice(&self.ctx.data[data_begin..data_end]);
+                    }
                 }
+                CODESIZE => self.stack.push(self.code.len().into()),
+                CODECOPY => {
+                    let mem_begin = pop!(self.stack).low_u64() as usize;
+                    let code_begin = pop!(self.stack).low_u64() as usize;
+                    let len = pop!(self.stack).low_u64() as usize;
+
+                    if self.ctx.data.len() < code_begin {
+                        self.stack.push(0.into());
+                    } else {
+                        let (mem_end, _) = mem_begin.overflowing_add(len);
+
+                        if self.memory.len() < mem_end {
+                            self.memory.resize(1024, 0);
+                        }
+
+                        let (code_end, f) = code_begin.overflowing_add(len);
+                        let code_end = if f { self.code.len() } else { code_end };
+
+                        self.memory[mem_begin..mem_end]
+                            .copy_from_slice(&self.code[code_begin..code_end]);
+                    }
+                }
+                GASPRICE => self.stack.push(self.env.gas_price),
+                SELFDESTRUCT => return Interupt::Exit(Exit::SelfDestruct(pop!(self.stack))),
                 op => {
                     error!("UNSUPPORTED OP: {}({:x})", op_to_str(op), op);
                     return Interupt::Exit(Exit::NotSupported);
