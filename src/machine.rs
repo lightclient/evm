@@ -1,13 +1,14 @@
 use crate::ctx::Context;
 use crate::env::Environment;
-use crate::instructions::*;
+use crate::instructions::Op;
 use crate::interupt::{Exit, Interupt, Yield};
 use crate::utils::I256;
 
-use log::{debug, error, info, trace, warn};
+use log::{debug, error, trace};
 use primitive_types::{U256, U512};
 use std::cmp::min;
 use std::convert::TryInto;
+use std::mem;
 use std::ops::{BitAnd, BitOr, BitXor};
 
 macro_rules! pop {
@@ -61,48 +62,48 @@ impl<'a> Machine<'a> {
                 self.stack,
             );
 
-            let op = self.code[self.pc];
+            let op: Op = unsafe { mem::transmute(self.code[self.pc]) };
             self.pc += 1;
 
-            debug!("{}({:x})", op_to_str(op), op);
+            debug!("{:?}", op);
 
             match op {
-                STOP => return Interupt::Exit(Exit::Stop),
-                ADD => {
+                Op::Stop => return Interupt::Exit(Exit::Stop),
+                Op::Add => {
                     let (r, _) = pop!(self.stack).overflowing_add(pop!(self.stack));
                     self.stack.push(r);
                 }
-                SUB => {
+                Op::Sub => {
                     let (r, _) = pop!(self.stack).overflowing_sub(pop!(self.stack));
                     self.stack.push(r);
                 }
-                MUL => {
+                Op::Mul => {
                     let (r, _) = pop!(self.stack).overflowing_mul(pop!(self.stack));
                     self.stack.push(r);
                 }
-                DIV => match pop!(self.stack).checked_div(pop!(self.stack)) {
+                Op::Div => match pop!(self.stack).checked_div(pop!(self.stack)) {
                     Some(r) => self.stack.push(r),
                     None => self.stack.push(0.into()),
                 },
-                SDIV => {
+                Op::Sdiv => {
                     let op1: I256 = pop!(self.stack).into();
                     let op2: I256 = pop!(self.stack).into();
                     self.stack.push((op1 / op2).into())
                 }
-                MOD => {
+                Op::Mod => {
                     let r = pop!(self.stack)
                         .checked_rem(pop!(self.stack))
                         .unwrap_or(0.into());
                     self.stack.push(r);
                 }
-                SMOD => {
+                Op::Smod => {
                     let op1: I256 = pop!(self.stack).into();
                     let op2: I256 = pop!(self.stack).into();
                     let r: I256 = op1.checked_rem(op2).unwrap_or(I256::zero());
 
                     self.stack.push(r.into());
                 }
-                ADDMOD => {
+                Op::Addmod => {
                     let op1: U512 = pop!(self.stack).into();
                     let op2: U512 = pop!(self.stack).into();
                     let op3: U512 = pop!(self.stack).into();
@@ -115,7 +116,7 @@ impl<'a> Machine<'a> {
 
                     self.stack.push(r);
                 }
-                MULMOD => {
+                Op::Mulmod => {
                     let op1: U512 = pop!(self.stack).into();
                     let op2: U512 = pop!(self.stack).into();
                     let op3: U512 = pop!(self.stack).into();
@@ -128,7 +129,7 @@ impl<'a> Machine<'a> {
 
                     self.stack.push(r);
                 }
-                EXP => {
+                Op::Exp => {
                     let mut op1 = pop!(self.stack);
                     let mut op2 = pop!(self.stack);
                     let mut r: U256 = 1.into();
@@ -143,7 +144,7 @@ impl<'a> Machine<'a> {
 
                     self.stack.push(r);
                 }
-                SIGEXTEND => {
+                Op::Signextend => {
                     let op1 = pop!(self.stack);
                     let op2 = pop!(self.stack);
                     let mut ret = U256::zero();
@@ -168,14 +169,14 @@ impl<'a> Machine<'a> {
 
                     self.stack.push(ret)
                 }
-                LT => {
+                Op::Lt => {
                     if pop!(self.stack).lt(&pop!(self.stack)) {
                         self.stack.push(1.into());
                     } else {
                         self.stack.push(0.into())
                     }
                 }
-                SLT => {
+                Op::Gt => {
                     let op1: I256 = pop!(self.stack).into();
                     let op2: I256 = pop!(self.stack).into();
 
@@ -185,14 +186,14 @@ impl<'a> Machine<'a> {
                         self.stack.push(0.into())
                     }
                 }
-                GT => {
+                Op::Slt => {
                     if pop!(self.stack).gt(&pop!(self.stack)) {
                         self.stack.push(1.into());
                     } else {
                         self.stack.push(0.into())
                     }
                 }
-                SGT => {
+                Op::Sgt => {
                     let op1: I256 = pop!(self.stack).into();
                     let op2: I256 = pop!(self.stack).into();
 
@@ -202,50 +203,50 @@ impl<'a> Machine<'a> {
                         self.stack.push(0.into())
                     }
                 }
-                EQ => {
+                Op::Eq => {
                     if pop!(self.stack).eq(&pop!(self.stack)) {
                         self.stack.push(1.into());
                     } else {
                         self.stack.push(0.into())
                     }
                 }
-                ISZERO => {
+                Op::Iszero => {
                     if pop!(self.stack) == U256::zero() {
                         self.stack.push(1.into());
                     } else {
                         self.stack.push(0.into());
                     }
                 }
-                AND => {
+                Op::And => {
                     let r = pop!(self.stack).bitand(pop!(self.stack));
                     self.stack.push(r);
                 }
-                OR => {
+                Op::Or => {
                     let r = pop!(self.stack).bitor(pop!(self.stack));
                     self.stack.push(r);
                 }
-                XOR => {
+                Op::Xor => {
                     let r = pop!(self.stack).bitxor(pop!(self.stack));
                     self.stack.push(r);
                 }
-                NOT => {
+                Op::Not => {
                     let r = !pop!(self.stack);
                     self.stack.push(r);
                 }
-                BYTE => {
+                Op::Byte => {
                     let idx = pop!(self.stack).low_u64().checked_rem(32).unwrap_or(0);
                     let op: [u8; 32] = pop!(self.stack).into();
                     self.stack.push(op[idx as usize].into());
                 }
-                TIMESTAMP => self.stack.push(self.env.timestamp),
-                COINBASE => self.stack.push(self.env.coinbase.as_bytes().into()),
-                NUMBER => self.stack.push(self.env.block_number),
-                DIFFICULTY => self.stack.push(self.env.difficulty),
-                GASLIMIT => self.stack.push(self.env.gas_limit),
-                POP => {
+                Op::Timestamp => self.stack.push(self.env.timestamp),
+                Op::Coinbase => self.stack.push(self.env.coinbase.as_bytes().into()),
+                Op::Number => self.stack.push(self.env.block_number),
+                Op::Difficulty => self.stack.push(self.env.difficulty),
+                Op::GasLimit => self.stack.push(self.env.gas_limit),
+                Op::Pop => {
                     let _ = pop!(self.stack);
                 }
-                MLOAD => {
+                Op::MLoad => {
                     let idx = pop!(self.stack).low_u64() as usize;
                     let mut ret = [0; 32];
 
@@ -256,29 +257,91 @@ impl<'a> Machine<'a> {
 
                     self.stack.push(ret.into());
                 }
-                op @ PUSH1..=PUSH32 => {
-                    if self.pc + from_base!(PUSH1, op) < self.code.len() {
-                        let o = &self.code[self.pc..self.pc + from_base!(PUSH1, op) + 1];
+                Op::Push1
+                | Op::Push2
+                | Op::Push3
+                | Op::Push4
+                | Op::Push5
+                | Op::Push6
+                | Op::Push7
+                | Op::Push8
+                | Op::Push9
+                | Op::Push10
+                | Op::Push11
+                | Op::Push12
+                | Op::Push13
+                | Op::Push14
+                | Op::Push15
+                | Op::Push16
+                | Op::Push17
+                | Op::Push18
+                | Op::Push19
+                | Op::Push20
+                | Op::Push21
+                | Op::Push22
+                | Op::Push23
+                | Op::Push24
+                | Op::Push25
+                | Op::Push26
+                | Op::Push27
+                | Op::Push28
+                | Op::Push29
+                | Op::Push30
+                | Op::Push31
+                | Op::Push32 => {
+                    let base = from_base!(0x60, unsafe { mem::transmute::<Op, u8>(op) });
+                    if self.pc + base < self.code.len() {
+                        let o = &self.code[self.pc..self.pc + base + 1];
                         push!(self.stack, o);
                     } else {
                         return Interupt::Exit(Exit::StackUnderflow);
                     }
 
-                    self.pc += from_base!(PUSH1, op) + 1;
+                    self.pc += base + 1;
                 }
-                op @ DUP1..=DUP16 => {
-                    let dup_idx = from_base!(DUP1, op);
+                Op::Dup1
+                | Op::Dup2
+                | Op::Dup3
+                | Op::Dup4
+                | Op::Dup5
+                | Op::Dup6
+                | Op::Dup7
+                | Op::Dup8
+                | Op::Dup9
+                | Op::Dup10
+                | Op::Dup11
+                | Op::Dup12
+                | Op::Dup13
+                | Op::Dup14
+                | Op::Dup15
+                | Op::Dup16 => {
+                    let dup_idx = from_base!(0x80, unsafe { mem::transmute::<Op, u8>(op) });
 
                     if !self.stack.is_empty() && dup_idx < self.stack.len() {
-                        let idx = self.stack.len() - from_base!(DUP1, op) - 1;
+                        let idx = self.stack.len() - dup_idx - 1;
                         let e = self.stack[idx];
                         self.stack.push(e);
                     } else {
                         return Interupt::Exit(Exit::StackUnderflow);
                     }
                 }
-                op @ SWAP1..=SWAP16 => {
-                    let swap_idx = from_base!(SWAP1, op) + 1;
+                Op::Swap1
+                | Op::Swap2
+                | Op::Swap3
+                | Op::Swap4
+                | Op::Swap5
+                | Op::Swap6
+                | Op::Swap7
+                | Op::Swap8
+                | Op::Swap9
+                | Op::Swap10
+                | Op::Swap11
+                | Op::Swap12
+                | Op::Swap13
+                | Op::Swap14
+                | Op::Swap15
+                | Op::Swap16 => {
+                    let swap_idx = from_base!(0x90, unsafe { mem::transmute::<Op, u8>(op) });
 
                     if !self.stack.is_empty() && swap_idx < self.stack.len() {
                         let top = self.stack.len() - 1;
@@ -288,39 +351,49 @@ impl<'a> Machine<'a> {
                         return Interupt::Exit(Exit::StackUnderflow);
                     }
                 }
-                SLOAD => return Interupt::Yield(Yield::Load(pop!(self.stack))),
-                SSTORE => return Interupt::Yield(Yield::Store(pop!(self.stack), pop!(self.stack))),
-                JUMP => {
+                Op::SLoad => return Interupt::Yield(Yield::Load(pop!(self.stack))),
+                Op::SStore => {
+                    return Interupt::Yield(Yield::Store(pop!(self.stack), pop!(self.stack)))
+                }
+                Op::Jump => {
                     let dest = pop!(self.stack).low_u64() as usize;
-                    match self.code.get(dest) {
-                        Some(&JUMPDEST) => (),
+                    match self
+                        .code
+                        .get(dest)
+                        .and_then(|op| Some(unsafe { mem::transmute::<&u8, &Op>(op) }))
+                    {
+                        Some(Op::Jumpdest) => (),
                         _ => return Interupt::Exit(Exit::BadJump),
                     }
 
                     self.pc = dest;
                 }
-                JUMPI => {
+                Op::Jumpi => {
                     let dest = pop!(self.stack).low_u64() as usize;
                     let condition = pop!(self.stack);
 
                     if condition == U256::one() {
-                        match self.code.get(dest) {
-                            Some(&JUMPDEST) => (),
+                        match self
+                            .code
+                            .get(dest)
+                            .and_then(|op| Some(unsafe { mem::transmute::<&u8, &Op>(op) }))
+                        {
+                            Some(Op::Jumpdest) => (),
                             _ => return Interupt::Exit(Exit::BadJump),
                         }
 
                         self.pc = dest;
                     }
                 }
-                PC => self.stack.push(self.pc.into()),
-                MSIZE => self.stack.push(self.memory.len().into()),
-                JUMPDEST => (),
-                ADDRESS => self.stack.push(self.ctx.target.as_bytes().into()),
-                BALANCE => {}
-                ORIGIN => self.stack.push(self.ctx.origin.as_bytes().into()),
-                CALLER => self.stack.push(self.ctx.caller.as_bytes().into()),
-                CALLVALUE => self.stack.push(self.ctx.value),
-                CALLDATALOAD => {
+                Op::Pc => self.stack.push(self.pc.into()),
+                Op::MSize => self.stack.push(self.memory.len().into()),
+                Op::Jumpdest => (),
+                Op::Address => self.stack.push(self.ctx.target.as_bytes().into()),
+                Op::Balance => {}
+                Op::Origin => self.stack.push(self.ctx.origin.as_bytes().into()),
+                Op::Caller => self.stack.push(self.ctx.caller.as_bytes().into()),
+                Op::CallValue => self.stack.push(self.ctx.value),
+                Op::CalldataLoad => {
                     let begin = pop!(self.stack);
                     let mut ret = [0u8; 32];
 
@@ -346,8 +419,8 @@ impl<'a> Machine<'a> {
 
                     self.stack.push(ret.into());
                 }
-                CALLDATASIZE => self.stack.push(self.ctx.data.len().into()),
-                CALLDATACOPY => {
+                Op::CalldataSize => self.stack.push(self.ctx.data.len().into()),
+                Op::CalldataCopy => {
                     let mem_begin = pop!(self.stack).low_u64() as usize;
                     let data_begin = pop!(self.stack).low_u64() as usize;
                     let len = pop!(self.stack).low_u64() as usize;
@@ -368,8 +441,8 @@ impl<'a> Machine<'a> {
                             .copy_from_slice(&self.ctx.data[data_begin..data_end]);
                     }
                 }
-                CODESIZE => self.stack.push(self.code.len().into()),
-                CODECOPY => {
+                Op::CodeSize => self.stack.push(self.code.len().into()),
+                Op::CodeCopy => {
                     let mem_begin = pop!(self.stack).low_u64() as usize;
                     let code_begin = pop!(self.stack).low_u64() as usize;
                     let len = pop!(self.stack).low_u64() as usize;
@@ -390,12 +463,14 @@ impl<'a> Machine<'a> {
                             .copy_from_slice(&self.code[code_begin..code_end]);
                     }
                 }
-                GASPRICE => self.stack.push(self.env.gas_price),
-                RETURN => return Interupt::Exit(Exit::Ret(pop!(self.stack), pop!(self.stack))),
-                REVERT => return Interupt::Exit(Exit::Revert(pop!(self.stack), pop!(self.stack))),
-                SELFDESTRUCT => return Interupt::Exit(Exit::SelfDestruct(pop!(self.stack))),
-                op => {
-                    error!("UNSUPPORTED OP: {}({:x})", op_to_str(op), op);
+                Op::GasPrice => self.stack.push(self.env.gas_price),
+                Op::Return => return Interupt::Exit(Exit::Ret(pop!(self.stack), pop!(self.stack))),
+                Op::Revert => {
+                    return Interupt::Exit(Exit::Revert(pop!(self.stack), pop!(self.stack)))
+                }
+                Op::SelfDestruct => return Interupt::Exit(Exit::SelfDestruct(pop!(self.stack))),
+                _ => {
+                    error!("UNSUPPORTED OP: {:?}", op);
                     return Interupt::Exit(Exit::NotSupported);
                 }
             }

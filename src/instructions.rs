@@ -1,207 +1,167 @@
-pub const STOP: u8 = 0x00;
-pub const ADD: u8 = 0x01;
-pub const MUL: u8 = 0x02;
-pub const SUB: u8 = 0x03;
-pub const DIV: u8 = 0x04;
-pub const SDIV: u8 = 0x05;
-pub const MOD: u8 = 0x06;
-pub const SMOD: u8 = 0x07;
-pub const ADDMOD: u8 = 0x08;
-pub const MULMOD: u8 = 0x09;
-pub const EXP: u8 = 0x0A;
-pub const SIGEXTEND: u8 = 0x0B;
+#[derive(Debug)]
+#[non_exhaustive]
+#[repr(u8)]
+pub enum Op {
+    Stop = 0x00,
 
-pub const LT: u8 = 0x10;
-pub const GT: u8 = 0x11;
-pub const SLT: u8 = 0x12;
-pub const SGT: u8 = 0x13;
-pub const EQ: u8 = 0x14;
-pub const ISZERO: u8 = 0x15;
-pub const AND: u8 = 0x16;
-pub const OR: u8 = 0x17;
-pub const XOR: u8 = 0x18;
-pub const NOT: u8 = 0x19;
-pub const BYTE: u8 = 0x1A;
-pub const SHL: u8 = 0x1B;
-pub const SHR: u8 = 0x1C;
-pub const SAR: u8 = 0x1D;
+    // basic arithmetic
+    Add = 0x01,
+    Mul = 0x02,
+    Sub = 0x03,
+    Div = 0x04,
+    Sdiv = 0x05,
+    Mod = 0x06,
+    Smod = 0x07,
+    Addmod = 0x08,
+    Mulmod = 0x09,
+    Exp = 0x0A,
+    Signextend = 0x0B,
 
-pub const SHA3: u8 = 0x20;
+    // bitwise operators
+    Lt = 0x10,
+    Gt = 0x11,
+    Slt = 0x12,
+    Sgt = 0x13,
+    Eq = 0x14,
+    Iszero = 0x15,
+    And = 0x16,
+    Or = 0x17,
+    Xor = 0x18,
+    Not = 0x19,
+    Byte = 0x1A,
+    Shl = 0x1B,
+    Shr = 0x1C,
+    Sar = 0x1D,
 
-pub const ADDRESS: u8 = 0x30;
-pub const BALANCE: u8 = 0x31;
-pub const ORIGIN: u8 = 0x32;
-pub const CALLER: u8 = 0x33;
-pub const CALLVALUE: u8 = 0x34;
-pub const CALLDATALOAD: u8 = 0x35;
-pub const CALLDATASIZE: u8 = 0x36;
-pub const CALLDATACOPY: u8 = 0x37;
-pub const CODESIZE: u8 = 0x38;
-pub const CODECOPY: u8 = 0x39;
+    // sha3
+    Sha3 = 0x20,
 
-pub const GASPRICE: u8 = 0x3A;
+    // contextual
+    Address = 0x30,
+    Balance = 0x31,
+    Origin = 0x32,
+    Caller = 0x33,
+    CallValue = 0x34,
+    CalldataLoad = 0x35,
+    CalldataSize = 0x36,
+    CalldataCopy = 0x37,
+    CodeSize = 0x38,
+    CodeCopy = 0x39,
 
-pub const BLOCKHASH: u8 = 0x40;
-pub const COINBASE: u8 = 0x41;
-pub const TIMESTAMP: u8 = 0x42;
-pub const NUMBER: u8 = 0x43;
-pub const DIFFICULTY: u8 = 0x44;
-pub const GASLIMIT: u8 = 0x45;
+    GasPrice = 0x3A,
+    ExtCodeSize = 0x3B,
+    ExtCodeCopy = 0x3C,
+    ReturnDataSize = 0x3D,
+    ReturnDataCopy = 0x3E,
+    ExtCodeHash = 0x3F,
 
-pub const POP: u8 = 0x50;
+    // environmental
+    BlockHash = 0x40,
+    Coinbase = 0x41,
+    Timestamp = 0x42,
+    Number = 0x43,
+    Difficulty = 0x44,
+    GasLimit = 0x45,
 
-pub const MLOAD: u8 = 0x51;
-pub const MSTORE: u8 = 0x52;
-pub const MSTORE8: u8 = 0x53;
+    // vm operations
+    Pop = 0x50,
+    MLoad = 0x51,
+    MStore = 0x52,
+    MStore8 = 0x53,
+    SLoad = 0x54,
+    SStore = 0x55,
+    Jump = 0x56,
+    Jumpi = 0x57,
+    Pc = 0x58,
+    MSize = 0x59,
+    Gas = 0x5A,
+    Jumpdest = 0x5B,
 
-pub const SLOAD: u8 = 0x54;
-pub const SSTORE: u8 = 0x55;
+    // push
+    Push1 = 0x60,
+    Push2 = 0x61,
+    Push3 = 0x62,
+    Push4 = 0x63,
+    Push5 = 0x64,
+    Push6 = 0x65,
+    Push7 = 0x66,
+    Push8 = 0x67,
+    Push9 = 0x68,
+    Push10 = 0x69,
+    Push11 = 0x6A,
+    Push12 = 0x6B,
+    Push13 = 0x6C,
+    Push14 = 0x6D,
+    Push15 = 0x6E,
+    Push16 = 0x6F,
+    Push17 = 0x70,
+    Push18 = 0x71,
+    Push19 = 0x72,
+    Push20 = 0x73,
+    Push21 = 0x74,
+    Push22 = 0x75,
+    Push23 = 0x76,
+    Push24 = 0x77,
+    Push25 = 0x78,
+    Push26 = 0x79,
+    Push27 = 0x7A,
+    Push28 = 0x7B,
+    Push29 = 0x7C,
+    Push30 = 0x7D,
+    Push31 = 0x7E,
+    Push32 = 0x7F,
 
-pub const JUMP: u8 = 0x56;
-pub const JUMPI: u8 = 0x57;
-pub const PC: u8 = 0x58;
-pub const MSIZE: u8 = 0x59;
-pub const GAS: u8 = 0x5A;
-pub const JUMPDEST: u8 = 0x5B;
+    // dup
+    Dup1 = 0x80,
+    Dup2 = 0x81,
+    Dup3 = 0x82,
+    Dup4 = 0x83,
+    Dup5 = 0x84,
+    Dup6 = 0x85,
+    Dup7 = 0x86,
+    Dup8 = 0x87,
+    Dup9 = 0x88,
+    Dup10 = 0x89,
+    Dup11 = 0x8A,
+    Dup12 = 0x8B,
+    Dup13 = 0x8C,
+    Dup14 = 0x8D,
+    Dup15 = 0x8E,
+    Dup16 = 0x8F,
 
-pub const PUSH1: u8 = 0x60;
-pub const PUSH2: u8 = 0x61;
-pub const PUSH3: u8 = 0x62;
-pub const PUSH4: u8 = 0x63;
-pub const PUSH5: u8 = 0x64;
-pub const PUSH6: u8 = 0x65;
-pub const PUSH7: u8 = 0x66;
-pub const PUSH8: u8 = 0x67;
-pub const PUSH9: u8 = 0x68;
-pub const PUSH10: u8 = 0x69;
-pub const PUSH11: u8 = 0x6A;
-pub const PUSH12: u8 = 0x6B;
-pub const PUSH13: u8 = 0x6C;
-pub const PUSH14: u8 = 0x6D;
-pub const PUSH15: u8 = 0x6E;
-pub const PUSH16: u8 = 0x6F;
-pub const PUSH17: u8 = 0x70;
-pub const PUSH18: u8 = 0x71;
-pub const PUSH19: u8 = 0x72;
-pub const PUSH20: u8 = 0x73;
-pub const PUSH21: u8 = 0x74;
-pub const PUSH22: u8 = 0x75;
-pub const PUSH23: u8 = 0x76;
-pub const PUSH24: u8 = 0x77;
-pub const PUSH25: u8 = 0x78;
-pub const PUSH26: u8 = 0x79;
-pub const PUSH27: u8 = 0x7A;
-pub const PUSH28: u8 = 0x7B;
-pub const PUSH29: u8 = 0x7C;
-pub const PUSH30: u8 = 0x7D;
-pub const PUSH31: u8 = 0x7E;
-pub const PUSH32: u8 = 0x7F;
+    // swap
+    Swap1 = 0x90,
+    Swap2 = 0x91,
+    Swap3 = 0x92,
+    Swap4 = 0x93,
+    Swap5 = 0x94,
+    Swap6 = 0x95,
+    Swap7 = 0x96,
+    Swap8 = 0x97,
+    Swap9 = 0x98,
+    Swap10 = 0x99,
+    Swap11 = 0x9A,
+    Swap12 = 0x9B,
+    Swap13 = 0x9C,
+    Swap14 = 0x9D,
+    Swap15 = 0x9E,
+    Swap16 = 0x9F,
 
-pub const DUP1: u8 = 0x80;
-pub const DUP2: u8 = 0x81;
-pub const DUP3: u8 = 0x82;
-pub const DUP4: u8 = 0x83;
-pub const DUP5: u8 = 0x84;
-pub const DUP6: u8 = 0x85;
-pub const DUP7: u8 = 0x86;
-pub const DUP8: u8 = 0x87;
-pub const DUP9: u8 = 0x88;
-pub const DUP10: u8 = 0x89;
-pub const DUP11: u8 = 0x8A;
-pub const DUP12: u8 = 0x8B;
-pub const DUP13: u8 = 0x8C;
-pub const DUP14: u8 = 0x8D;
-pub const DUP15: u8 = 0x8E;
-pub const DUP16: u8 = 0x8F;
+    // log
+    Log0 = 0xA0,
+    Log1 = 0xA1,
+    Log2 = 0xA2,
+    Log3 = 0xA3,
+    Log4 = 0xA4,
 
-pub const SWAP1: u8 = 0x90;
-pub const SWAP2: u8 = 0x91;
-pub const SWAP3: u8 = 0x92;
-pub const SWAP4: u8 = 0x93;
-pub const SWAP5: u8 = 0x94;
-pub const SWAP6: u8 = 0x95;
-pub const SWAP7: u8 = 0x96;
-pub const SWAP8: u8 = 0x97;
-pub const SWAP9: u8 = 0x98;
-pub const SWAP10: u8 = 0x99;
-pub const SWAP11: u8 = 0x9A;
-pub const SWAP12: u8 = 0x9B;
-pub const SWAP13: u8 = 0x9C;
-pub const SWAP14: u8 = 0x9D;
-pub const SWAP15: u8 = 0x9E;
-pub const SWAP16: u8 = 0x9F;
-
-pub const RETURN: u8 = 0xF3;
-pub const REVERT: u8 = 0xFD;
-pub const INVALID: u8 = 0xFE;
-pub const SELFDESTRUCT: u8 = 0xFF;
-
-pub fn op_to_str(op: u8) -> &'static str {
-    match op {
-        STOP => "STOP",
-        ADD => "ADD",
-        MUL => "MUL",
-        SUB => "SUB",
-        DIV => "DIV",
-        SDIV => "SDIV",
-        MOD => "MOD",
-        SMOD => "SMOD",
-        ADDMOD => "ADDMOD",
-        MULMOD => "MULMOD",
-        EXP => "EXP",
-        SIGEXTEND => "SIGEXTEND",
-        LT => "LT",
-        GT => "GT",
-        SLT => "SLT",
-        SGT => "SGT",
-        EQ => "EQ",
-        ISZERO => "ISZERO",
-        AND => "AND",
-        OR => "OR",
-        XOR => "XOR",
-        NOT => "NOT",
-        BYTE => "BYTE",
-        SHL => "SHL",
-        SHR => "SHR",
-        SAR => "SAR",
-        SHA3 => "SHA3",
-        ADDRESS => "ADDRESS",
-        BALANCE => "BALANCE",
-        ORIGIN => "ORIGIN",
-        CALLER => "CALLER",
-        CALLVALUE => "CALLVALUE",
-        CALLDATALOAD => "CALLDATALOAD",
-        CALLDATASIZE => "CALLDATASIZE",
-        CALLDATACOPY => "CALLDATACOPY",
-        CODESIZE => "CODESIZE",
-        CODECOPY => "CODECOPY",
-        GASPRICE => "GASPRICE",
-        POP => "POP",
-        BLOCKHASH => "BLOCKHASH",
-        COINBASE => "COINBASE",
-        TIMESTAMP => "TIMESTAMP",
-        NUMBER => "NUMBER",
-        DIFFICULTY => "DIFFICULTY",
-        GASLIMIT => "GASLIMIT",
-        MLOAD => "MLOAD",
-        MSTORE => "MSTORE",
-        MSTORE8 => "MSTORE8",
-        SLOAD => "SLOAD",
-        SSTORE => "SSTORE",
-        JUMP => "JUMP",
-        JUMPI => "JUMPI",
-        PC => "PC",
-        MSIZE => "MSIZE",
-        GAS => "GAS",
-        JUMPDEST => "JUMPDEST",
-        PUSH1..=PUSH32 => "PUSH",
-        DUP1..=DUP16 => "DUP",
-        SWAP1..=SWAP16 => "SWAP",
-        RETURN => "RETURN",
-        REVERT => "REVERT",
-        INVALID => "INVALID",
-        SELFDESTRUCT => "SELFDESTRUCT",
-
-        _ => "UNKNOWN",
-    }
+    // system ops
+    Create = 0xF0,
+    Call = 0xF1,
+    CallCode = 0xF2,
+    Return = 0xF3,
+    DelegateCall = 0xF4,
+    Create2 = 0xF5,
+    StaticCall = 0xFA,
+    Revert = 0xFD,
+    SelfDestruct = 0xFF,
 }
