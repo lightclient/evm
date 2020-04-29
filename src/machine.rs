@@ -290,6 +290,31 @@ impl<'a> Machine<'a> {
                 }
                 SLOAD => return Interupt::Yield(Yield::Load(pop!(self.stack))),
                 SSTORE => return Interupt::Yield(Yield::Store(pop!(self.stack), pop!(self.stack))),
+                JUMP => {
+                    let dest = pop!(self.stack).low_u64() as usize;
+                    match self.code.get(dest) {
+                        Some(&JUMPDEST) => (),
+                        _ => return Interupt::Exit(Exit::BadJump),
+                    }
+
+                    self.pc = dest;
+                }
+                JUMPI => {
+                    let dest = pop!(self.stack).low_u64() as usize;
+                    let condition = pop!(self.stack);
+
+                    if condition == U256::one() {
+                        match self.code.get(dest) {
+                            Some(&JUMPDEST) => (),
+                            _ => return Interupt::Exit(Exit::BadJump),
+                        }
+
+                        self.pc = dest;
+                    }
+                }
+                PC => self.stack.push(self.pc.into()),
+                MSIZE => self.stack.push(self.memory.len().into()),
+                JUMPDEST => (),
                 ADDRESS => self.stack.push(self.ctx.target.as_bytes().into()),
                 BALANCE => {}
                 ORIGIN => self.stack.push(self.ctx.origin.as_bytes().into()),
@@ -366,6 +391,8 @@ impl<'a> Machine<'a> {
                     }
                 }
                 GASPRICE => self.stack.push(self.env.gas_price),
+                RETURN => return Interupt::Exit(Exit::Ret(pop!(self.stack), pop!(self.stack))),
+                REVERT => return Interupt::Exit(Exit::Revert(pop!(self.stack), pop!(self.stack))),
                 SELFDESTRUCT => return Interupt::Exit(Exit::SelfDestruct(pop!(self.stack))),
                 op => {
                     error!("UNSUPPORTED OP: {}({:x})", op_to_str(op), op);
@@ -374,6 +401,6 @@ impl<'a> Machine<'a> {
             }
         }
 
-        Interupt::Exit(Exit::Ret)
+        Interupt::Exit(Exit::Ret(0.into(), 0.into()))
     }
 }

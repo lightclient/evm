@@ -19,7 +19,7 @@ pub enum Yield {
 pub enum Exit {
     // successful
     Stop,
-    Ret,
+    Ret(U256, U256),
     SelfDestruct(U256),
 
     // normal error
@@ -32,7 +32,7 @@ pub enum Exit {
     OutOfGas,
 
     // revert
-    Revert,
+    Revert(U256, U256),
 
     // fatal
     NotSupported,

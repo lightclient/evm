@@ -57,6 +57,13 @@ pub const MSTORE8: u8 = 0x53;
 pub const SLOAD: u8 = 0x54;
 pub const SSTORE: u8 = 0x55;
 
+pub const JUMP: u8 = 0x56;
+pub const JUMPI: u8 = 0x57;
+pub const PC: u8 = 0x58;
+pub const MSIZE: u8 = 0x59;
+pub const GAS: u8 = 0x5A;
+pub const JUMPDEST: u8 = 0x5B;
+
 pub const PUSH1: u8 = 0x60;
 pub const PUSH2: u8 = 0x61;
 pub const PUSH3: u8 = 0x62;
@@ -181,6 +188,12 @@ pub fn op_to_str(op: u8) -> &'static str {
         MSTORE8 => "MSTORE8",
         SLOAD => "SLOAD",
         SSTORE => "SSTORE",
+        JUMP => "JUMP",
+        JUMPI => "JUMPI",
+        PC => "PC",
+        MSIZE => "MSIZE",
+        GAS => "GAS",
+        JUMPDEST => "JUMPDEST",
         PUSH1..=PUSH32 => "PUSH",
         DUP1..=DUP16 => "DUP",
         SWAP1..=SWAP16 => "SWAP",
