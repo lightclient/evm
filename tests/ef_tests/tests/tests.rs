@@ -22,6 +22,12 @@ fn vm_environmental_info_tests() {
 }
 
 #[test]
+fn vm_io_and_flow_tests() {
+    VmIoAndFlowHandler::run();
+}
+
+#[ignore]
+#[test]
 fn vm_log_tests() {
     VmLogHandler::run();
 }
