@@ -32,6 +32,7 @@ fn vm_log_tests() {
     VmLogHandler::run();
 }
 
+#[ignore]
 #[test]
 fn vm_performance_tests() {
     VmPerformanceHandler::run();

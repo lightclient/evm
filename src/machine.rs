@@ -206,10 +206,7 @@ impl<'a> Machine<'a> {
                 }
                 Op::Gt => {
                     spend_gas!(self.ctx.gas, G_VERYLOW);
-                    let op1: I256 = pop!(self.stack).into();
-                    let op2: I256 = pop!(self.stack).into();
-
-                    if op1.lt(&op2) {
+                    if pop!(self.stack).gt(&pop!(self.stack)) {
                         self.stack.push(1.into());
                     } else {
                         self.stack.push(0.into())
@@ -217,7 +214,10 @@ impl<'a> Machine<'a> {
                 }
                 Op::Slt => {
                     spend_gas!(self.ctx.gas, G_VERYLOW);
-                    if pop!(self.stack).gt(&pop!(self.stack)) {
+                    let op1: I256 = pop!(self.stack).into();
+                    let op2: I256 = pop!(self.stack).into();
+
+                    if op1.lt(&op2) {
                         self.stack.push(1.into());
                     } else {
                         self.stack.push(0.into())
