@@ -7,4 +7,5 @@ pub struct Context {
     pub origin: H160,
     pub value: U256,
     pub data: Vec<u8>,
+    pub gas: u64,
 }

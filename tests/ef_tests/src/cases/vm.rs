@@ -3,6 +3,7 @@ use crate::decode::{from_hex_to_buffer, from_hex_to_u64, json_decode_file};
 use crate::error::Error;
 
 use fast_evm::{ctx::Context, env::Environment, runtime::Runtime};
+use log::error;
 use primitive_types::{H160, U256};
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -84,6 +85,8 @@ impl Case for Vm {
     }
 
     fn result(&self, _case_index: usize) -> Result<(), Error> {
+        error!("{:?}\n", self.info);
+
         let env = Environment {
             coinbase: self.env.current_coinbase,
             difficulty: self.env.current_difficulty,
@@ -113,6 +116,7 @@ impl Case for Vm {
             origin: self.exec.origin,
             value: self.exec.value,
             data: self.exec.data.clone(),
+            gas: self.exec.gas.as_u64(),
         };
 
         rt.execute(ctx);

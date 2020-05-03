@@ -1,6 +1,7 @@
 pub mod account;
 pub mod ctx;
 pub mod env;
+pub mod gas;
 pub mod instructions;
 pub mod interupt;
 pub mod machine;
