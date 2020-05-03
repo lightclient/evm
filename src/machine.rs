@@ -425,7 +425,6 @@ impl<'a> Machine<'a> {
 
                     mem_expansion /= 32;
 
-                    // probably has an error
                     spend_gas!(
                         self.ctx.gas,
                         G_MEMORY * mem_expansion as u64 + mem_expansion.pow(2) as u64 / 512
@@ -448,7 +447,6 @@ impl<'a> Machine<'a> {
                     let value = pop!(self.stack);
                     let mem_expansion = (idx - min(idx, self.memory_size)) / 32;
 
-                    // probably has an error
                     spend_gas!(
                         self.ctx.gas,
                         (mem_expansion + mem_expansion.pow(2) / 512) as u64
@@ -604,9 +602,9 @@ impl<'a> Machine<'a> {
                     spend_gas!(self.ctx.gas, G_VERYLOW);
                     let swap_idx = from_base!(0x90, unsafe { mem::transmute::<Op, u8>(op) });
 
-                    if !self.stack.is_empty() && swap_idx < self.stack.len() {
+                    if 2 <= self.stack.len() && swap_idx < self.stack.len() - 1 {
                         let top = self.stack.len() - 1;
-                        let idx = top - swap_idx;
+                        let idx = top - swap_idx - 1;
                         self.stack.swap(top, idx);
                     } else {
                         return Interupt::Exit(Exit::StackUnderflow);
