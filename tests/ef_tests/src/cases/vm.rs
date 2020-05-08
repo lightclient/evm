@@ -85,7 +85,7 @@ impl Case for Vm {
     }
 
     fn result(&self, _case_index: usize) -> Result<(), Error> {
-        error!("{:?}\n", self.info);
+        // error!("{:?}\n", self.info);
 
         let env = Environment {
             coinbase: self.env.current_coinbase,

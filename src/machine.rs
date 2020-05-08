@@ -44,6 +44,52 @@ macro_rules! spend_gas {
     }};
 }
 
+macro_rules! pay_mem_gas {
+    ($m: expr, $begin: expr, $size: expr) => {{
+        if $m.memory_size <= $begin + $size {
+            let mut mem_expansion = ($begin + $size) - $m.memory_size;
+
+            // round to closest word
+            if mem_expansion % 32 != 0 {
+                mem_expansion += 31
+            }
+
+            mem_expansion /= 32;
+
+            spend_gas!(
+                $m.ctx.gas,
+                G_MEMORY * mem_expansion as u64 + mem_expansion.pow(2) as u64 / 512
+            );
+
+            $m.memory_size += mem_expansion * 32;
+
+            // resize memory if needed
+            if $m.memory.len() < $begin + $size {
+                $m.memory.resize($begin + $size + 256, 0);
+            }
+        }
+    }};
+}
+
+macro_rules! set_mem {
+    ($m: expr, $mem_begin: expr, $data_begin: expr, $data: expr, $size: expr) => {{
+        pay_mem_gas!($m, $mem_begin, $size);
+
+        // forgive me lord, i have sinned
+        if $data.len() <= $data_begin {
+            let data = vec![0; $size];
+            $m.memory[$mem_begin..$mem_begin + $size].copy_from_slice(&data[0..$size]);
+        } else if $data.len() <= $data_begin + $size {
+            let mut data = vec![0; $size];
+            data[0..$data.len() - $data_begin].copy_from_slice(&$data[$data_begin..$data.len()]);
+            $m.memory[$mem_begin..$mem_begin + $size].copy_from_slice(&data[0..$size]);
+        } else {
+            $m.memory[$mem_begin..$mem_begin + $size]
+                .copy_from_slice(&$data[$data_begin..$data_begin + $size]);
+        }
+    }};
+}
+
 pub struct Machine<'a> {
     pub pc: usize,
     pub stack: Vec<U256>,
@@ -325,52 +371,26 @@ impl<'a> Machine<'a> {
                     self.stack.push(self.ctx.data.len().into());
                 }
                 Op::CalldataCopy => {
-                    // todo gas
+                    spend_gas!(self.ctx.gas, G_VERYLOW);
+
                     let mem_begin = pop!(self.stack).low_u64() as usize;
                     let data_begin = pop!(self.stack).low_u64() as usize;
                     let len = pop!(self.stack).low_u64() as usize;
 
-                    if self.ctx.data.len() < data_begin {
-                        self.stack.push(0.into());
-                    } else {
-                        let (mem_end, _) = mem_begin.overflowing_add(len);
-
-                        if self.memory.len() < mem_end {
-                            self.memory.resize(1024, 0);
-                        }
-
-                        let (data_end, f) = data_begin.overflowing_add(len);
-                        let data_end = if f { self.ctx.data.len() } else { data_end };
-
-                        self.memory[mem_begin..mem_end]
-                            .copy_from_slice(&self.ctx.data[data_begin..data_end]);
-                    }
+                    set_mem!(self, mem_begin, data_begin, self.ctx.data, len);
                 }
                 Op::CodeSize => {
                     spend_gas!(self.ctx.gas, G_BASE);
                     self.stack.push(self.code.len().into());
                 }
                 Op::CodeCopy => {
-                    // todo gas
+                    spend_gas!(self.ctx.gas, G_VERYLOW);
+
                     let mem_begin = pop!(self.stack).low_u64() as usize;
                     let code_begin = pop!(self.stack).low_u64() as usize;
                     let len = pop!(self.stack).low_u64() as usize;
 
-                    if self.ctx.data.len() < code_begin {
-                        self.stack.push(0.into());
-                    } else {
-                        let (mem_end, _) = mem_begin.overflowing_add(len);
-
-                        if self.memory.len() < mem_end {
-                            self.memory.resize(1024, 0);
-                        }
-
-                        let (code_end, f) = code_begin.overflowing_add(len);
-                        let code_end = if f { self.code.len() } else { code_end };
-
-                        self.memory[mem_begin..mem_end]
-                            .copy_from_slice(&self.code[code_begin..code_end]);
-                    }
+                    set_mem!(self, mem_begin, code_begin, self.code, len);
                 }
                 Op::GasPrice => {
                     spend_gas!(self.ctx.gas, G_BASE);
@@ -415,50 +435,17 @@ impl<'a> Machine<'a> {
                 Op::MStore => {
                     spend_gas!(self.ctx.gas, G_VERYLOW);
 
-                    let idx = pop!(self.stack).as_u64() as usize;
-                    let mut mem_expansion = idx + 32 - min(idx + 32, self.memory_size);
-
-                    // why do you do this
-                    if mem_expansion % 32 != 0 {
-                        mem_expansion += 31
-                    }
-
-                    mem_expansion /= 32;
-
-                    spend_gas!(
-                        self.ctx.gas,
-                        G_MEMORY * mem_expansion as u64 + mem_expansion.pow(2) as u64 / 512
-                    );
-
+                    let mem_begin = pop!(self.stack).as_u64() as usize;
                     let value = pop!(self.stack);
 
-                    if idx + 32 > self.memory.len() {
-                        self.memory.resize(idx + 256, 0);
-                    }
-
-                    self.memory_size += mem_expansion * 32;
-
-                    let value: [u8; 32] = value.into();
-                    self.memory[idx..idx + 32].copy_from_slice(&value);
+                    set_mem!(self, mem_begin, 0, <[u8; 32]>::from(value), 32);
                 }
                 Op::MStore8 => {
                     spend_gas!(self.ctx.gas, G_VERYLOW);
-                    let idx = pop!(self.stack).as_u64() as usize;
+                    let mem_begin = pop!(self.stack).as_u64() as usize;
                     let value = pop!(self.stack);
-                    let mem_expansion = (idx - min(idx, self.memory_size)) / 32;
 
-                    spend_gas!(
-                        self.ctx.gas,
-                        (mem_expansion + mem_expansion.pow(2) / 512) as u64
-                    );
-
-                    self.memory_size += mem_expansion;
-
-                    if idx > self.memory.len() {
-                        self.memory.resize(idx + 256, 0);
-                    }
-
-                    self.memory[idx] = value.low_u64() as u8;
+                    set_mem!(self, mem_begin, 0, <[u8; 32]>::from(value)[31..32], 1);
                 }
                 Op::SLoad => {
                     spend_gas!(self.ctx.gas, 200);

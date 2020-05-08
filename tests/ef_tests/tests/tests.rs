@@ -48,6 +48,7 @@ fn vm_random_tests() {
     VmRandomHandler::run();
 }
 
+#[ignore]
 #[test]
 fn vm_sha3_tests() {
     VmSha3Handler::run();

@@ -4,9 +4,8 @@ use crate::env::Environment;
 use crate::interupt::{Exit, Interupt, Yield};
 use crate::machine::Machine;
 
-use log::{info, trace};
+use log::info;
 use primitive_types::H160;
-use std::cmp::min;
 use std::collections::BTreeMap;
 
 pub struct Runtime {
