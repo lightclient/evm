@@ -1,4 +1,4 @@
-use primitive_types::U256;
+use primitive_types::{H160, U256};
 
 #[derive(Debug)]
 pub enum Interupt<Y, E> {
@@ -20,7 +20,7 @@ pub enum Exit {
     // successful
     Stop,
     Ret(U256, U256),
-    SelfDestruct(U256),
+    SelfDestruct(H160),
 
     // normal error
     StackUnderflow,

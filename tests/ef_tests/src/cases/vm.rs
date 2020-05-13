@@ -2,7 +2,13 @@ use crate::cases::{Case, LoadCase};
 use crate::decode::{from_hex_to_buffer, from_hex_to_u64, json_decode_file};
 use crate::error::Error;
 
-use fast_evm::{ctx::Context, env::Environment, runtime::Runtime};
+use fast_evm::{
+    env::Environment,
+    execute::execute,
+    host::Host,
+    message::{Inner as MessageBody, Message},
+};
+
 use log::error;
 use primitive_types::{H160, U256};
 use serde::Deserialize;
@@ -108,18 +114,24 @@ impl Case for Vm {
             state.insert(h.clone(), a);
         }
 
-        let mut rt = Runtime { env, state };
-
-        let ctx = Context {
+        let msg = MessageBody {
             target: self.exec.address,
             caller: self.exec.caller,
             origin: self.exec.origin,
             value: self.exec.value,
             data: self.exec.data.clone(),
             gas: self.exec.gas.as_u64(),
+            depth: 0,
         };
 
-        rt.execute(ctx);
+        let mut host = FakeHost::with_state(state);
+
+        let code = match host.state.get(&msg.target) {
+            Some(a) => a.code.clone(),
+            None => return Err(Error::NotEqual("target missing from state".into())),
+        };
+
+        let _ = execute(&mut host, &env, Message::Call(msg), &code);
 
         if self.post.is_none() {
             return Ok(());
@@ -128,7 +140,7 @@ impl Case for Vm {
         let post = self.post.clone().unwrap();
 
         for (address, expected) in post {
-            let actual = rt.state.get(&address);
+            let actual = host.state.get(&address);
 
             if actual.is_none() {
                 return Err(Error::NotEqual(format!(
@@ -174,5 +186,36 @@ impl Case for Vm {
         }
 
         Ok(())
+    }
+}
+
+pub struct FakeHost {
+    state: BTreeMap<H160, fast_evm::account::Account>,
+}
+
+impl FakeHost {
+    pub fn with_state(state: BTreeMap<H160, fast_evm::account::Account>) -> Self {
+        Self { state }
+    }
+}
+
+impl Host for FakeHost {
+    fn get_storage(&self, address: &H160, key: &U256) -> U256 {
+        let account = self.state.get(address).unwrap();
+        match account.storage.get(key) {
+            Some(v) => *v,
+            None => 0.into(),
+        }
+    }
+
+    fn set_storage(&mut self, address: &H160, key: U256, value: U256) {
+        let account = self.state.get_mut(address).unwrap();
+        account.storage.insert(key, value);
+    }
+
+    fn self_destruct(&mut self, address: &H160, beneficiary: H160) {
+        let account = self.state.remove(address).unwrap();
+        let target = self.state.entry(beneficiary).or_default();
+        target.balance += account.balance;
     }
 }
