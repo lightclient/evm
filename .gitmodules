@@ -1,3 +1,4 @@
 [submodule "tests/ef_tests/fixtures"]
 	path = tests/ef_tests/fixtures
 	url = https://github.com/ethereum/tests
+	branch = tags/v7.0.0-beta.1
