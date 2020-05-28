@@ -8,6 +8,7 @@ use fast_evm::{
     env::Environment,
     execute::execute,
     host::Host,
+    interupt::Exit,
     message::{Inner as MessageBody, Message},
 };
 
@@ -64,10 +65,17 @@ impl Case for Vm {
         let mut env = Environment::from(&self.env);
         env.gas_price = self.exec.gas_price;
 
-        let _ = execute(&mut host, &env, Message::Call(msg), &code);
+        let result = execute(&mut host, &env, Message::Call(msg), &code);
 
+        // if post state isn't defined in the fixture, it is implicitly understood that the result
+        // of the transaction should be a revert.
         if self.post.is_none() {
-            return Ok(());
+            match result {
+                Exit::Stop | Exit::Ret(_, _) | Exit::SelfDestruct(_) => {
+                    return Err(Error::NotEqual("Transaction should have reverted".into()))
+                }
+                _ => return Ok(()),
+            };
         }
 
         let post = self.post.clone().unwrap();

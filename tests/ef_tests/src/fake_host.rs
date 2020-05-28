@@ -14,7 +14,11 @@ impl FakeHost {
 
 impl Host for FakeHost {
     fn get_storage(&self, address: &H160, key: &U256) -> U256 {
-        let account = self.state.get(address).unwrap();
+        let account = self
+            .state
+            .get(address)
+            .expect("getting storage from uninitialized account");
+
         match account.storage.get(key) {
             Some(v) => *v,
             None => 0.into(),
@@ -22,7 +26,11 @@ impl Host for FakeHost {
     }
 
     fn set_storage(&mut self, address: &H160, key: U256, value: U256) {
-        let account = self.state.get_mut(address).unwrap();
+        let account = self
+            .state
+            .get_mut(address)
+            .expect("setting storage on uninitialized account");
+
         account.storage.insert(key, value);
     }
 

@@ -3,7 +3,8 @@ use test_env_log::test;
 
 #[test]
 fn vm_arithmetic_tests() {
-    VmArithmeticHandler::run();
+    // VmArithmeticHandler::run();
+    VmArithmeticHandler::run_specified_tests(vec!["mulUnderFlow.json"]);
 }
 
 #[test]
@@ -23,7 +24,8 @@ fn vm_environmental_info_tests() {
 
 #[test]
 fn vm_io_and_flow_tests() {
-    VmIoAndFlowHandler::run();
+    // VmIoAndFlowHandler::run();
+    VmIoAndFlowHandler::run_specified_tests(vec!["return1.json"]);
 }
 
 #[ignore]

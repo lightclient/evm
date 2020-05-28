@@ -4,9 +4,16 @@ version = "0.0.0"
 authors = ["Matt Garnett <crates@garnett.dev>"]
 edition = "2018"
 
+[lib]
+name = "vm"
+crate-type = ["cdylib"]
+
 [dependencies]
 log = "0.4.0"
 primitive-types = "0.7.0"
+# evmc-sys = "7.1.0"
+evmc-vm = "7.1.0"
+evmc-declare = "7.1.0"
 
 [workspace]
 members = ["tests/ef_tests"]
