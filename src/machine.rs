@@ -23,6 +23,10 @@ macro_rules! pop {
 
 macro_rules! push {
     ($s: expr, $v: expr) => {{
+        if $s.len() > 1023 {
+            return Interupt::Exit(Exit::StackOverflow);
+        }
+
         $s.push($v.into())
     }};
 }
@@ -576,7 +580,7 @@ impl<'a> Machine<'a> {
                     if !self.stack.is_empty() && dup_idx < self.stack.len() {
                         let idx = self.stack.len() - dup_idx - 1;
                         let e = self.stack[idx];
-                        self.stack.push(e);
+                        push!(self.stack, e);
                     } else {
                         return Interupt::Exit(Exit::StackUnderflow);
                     }

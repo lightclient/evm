@@ -13,6 +13,7 @@ pub struct Vm;
 
 impl EvmcVm for Vm {
     fn init() -> Self {
+        env_logger::init();
         Vm {}
     }
 

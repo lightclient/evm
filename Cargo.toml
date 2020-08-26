@@ -10,10 +10,10 @@ crate-type = ["cdylib"]
 
 [dependencies]
 log = "0.4.0"
-primitive-types = "0.7.0"
-# evmc-sys = "7.1.0"
+env_logger = "0.7.1"
 evmc-vm = "7.1.0"
 evmc-declare = "7.1.0"
+primitive-types = "0.7.0"
 
 [workspace]
 members = ["tests/ef_tests"]
