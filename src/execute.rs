@@ -1,5 +1,5 @@
 use crate::env::Environment;
-use crate::interupt::{Exit, Interupt, Yield};
+use crate::interrupt::{Exit, Interrupt, Yield};
 use crate::machine::Machine;
 use crate::message::{Kind as MessageKind, Message};
 
@@ -46,10 +46,10 @@ impl EvmcVm for Vm {
         loop {
             let i = m.run();
 
-            info!("interupt reason: {:?}", i);
+            info!("interrupt reason: {:?}", i);
 
             match i {
-                Interupt::Yield(y) => match y {
+                Interrupt::Yield(y) => match y {
                     Yield::Load(k) => {
                         let mut raw = [0; 32];
                         k.to_big_endian(&mut raw);
@@ -76,7 +76,7 @@ impl EvmcVm for Vm {
                     }
                     _ => unimplemented!(),
                 },
-                Interupt::Exit(Exit::SelfDestruct(beneficiary)) => {
+                Interrupt::Exit(Exit::SelfDestruct(beneficiary)) => {
                     context.selfdestruct(
                         msg.destination(),
                         &evmc_vm::ffi::evmc_address {
@@ -86,7 +86,7 @@ impl EvmcVm for Vm {
 
                     return ExecutionResult::success(m.gas as i64, None);
                 }
-                Interupt::Exit(e) => return e.to_result(m.gas as i64, &m.memory),
+                Interrupt::Exit(e) => return e.to_result(m.gas as i64, &m.memory),
             }
         }
     }

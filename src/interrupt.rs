@@ -2,7 +2,7 @@ use evmc_vm::{ffi::evmc_status_code as StatusCode, ExecutionResult as Result};
 use primitive_types::{H160, U256};
 
 #[derive(Debug)]
-pub enum Interupt<Y, E> {
+pub enum Interrupt<Y, E> {
     Yield(Y),
     Exit(E),
 }

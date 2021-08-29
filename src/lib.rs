@@ -3,7 +3,7 @@ pub mod env;
 pub mod execute;
 pub mod gas;
 pub mod instructions;
-pub mod interupt;
+pub mod interrupt;
 pub mod machine;
 pub mod message;
 pub mod utils;

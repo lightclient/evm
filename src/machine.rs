@@ -1,7 +1,7 @@
 use crate::env::Environment;
 use crate::gas::*;
 use crate::instructions::Op;
-use crate::interupt::{Exit, Interupt, Yield};
+use crate::interrupt::{Exit, Interrupt, Yield};
 use crate::message::Message;
 use crate::utils::I256;
 
@@ -16,7 +16,7 @@ macro_rules! pop {
     ($s: expr) => {{
         match $s.pop() {
             Some(o) => o,
-            None => return Interupt::Exit(Exit::StackUnderflow),
+            None => return Interrupt::Exit(Exit::StackUnderflow),
         }
     }};
 }
@@ -24,7 +24,7 @@ macro_rules! pop {
 macro_rules! push {
     ($s: expr, $v: expr) => {{
         if $s.len() > 1023 {
-            return Interupt::Exit(Exit::StackOverflow);
+            return Interrupt::Exit(Exit::StackOverflow);
         }
 
         $s.push($v.into())
@@ -43,7 +43,7 @@ macro_rules! spend_gas {
             Some(g) => {
                 $gas = g;
             }
-            None => return Interupt::Exit(Exit::OutOfGas),
+            None => return Interrupt::Exit(Exit::OutOfGas),
         }
     }};
 }
@@ -119,7 +119,7 @@ impl<'a> Machine<'a> {
         }
     }
 
-    pub fn run(&mut self) -> Interupt<Yield, Exit> {
+    pub fn run(&mut self) -> Interrupt<Yield, Exit> {
         while self.pc < self.code.len() {
             trace!(
                 "pc: {}, code[pc+1]: {:x?}, stack: {:x?}",
@@ -134,7 +134,7 @@ impl<'a> Machine<'a> {
             debug!("{:?}", op);
 
             match op {
-                Op::Stop => return Interupt::Exit(Exit::Stop),
+                Op::Stop => return Interrupt::Exit(Exit::Stop),
                 Op::Add => {
                     spend_gas!(self.gas, G_VERYLOW);
                     let (r, _) = pop!(self.stack).overflowing_add(pop!(self.stack));
@@ -464,11 +464,11 @@ impl<'a> Machine<'a> {
                 }
                 Op::SLoad => {
                     spend_gas!(self.gas, 200);
-                    return Interupt::Yield(Yield::Load(pop!(self.stack)));
+                    return Interrupt::Yield(Yield::Load(pop!(self.stack)));
                 }
                 Op::SStore => {
                     // todo gas
-                    return Interupt::Yield(Yield::Store(pop!(self.stack), pop!(self.stack)));
+                    return Interrupt::Yield(Yield::Store(pop!(self.stack), pop!(self.stack)));
                 }
                 Op::Jump => {
                     spend_gas!(self.gas, G_MID);
@@ -479,7 +479,7 @@ impl<'a> Machine<'a> {
                         .and_then(|op| Some(unsafe { mem::transmute::<&u8, &Op>(op) }))
                     {
                         Some(Op::Jumpdest) => (),
-                        _ => return Interupt::Exit(Exit::BadJump),
+                        _ => return Interrupt::Exit(Exit::BadJump),
                     }
 
                     self.pc = dest;
@@ -496,7 +496,7 @@ impl<'a> Machine<'a> {
                             .and_then(|op| Some(unsafe { mem::transmute::<&u8, &Op>(op) }))
                         {
                             Some(Op::Jumpdest) => (),
-                            _ => return Interupt::Exit(Exit::BadJump),
+                            _ => return Interrupt::Exit(Exit::BadJump),
                         }
 
                         self.pc = dest;
@@ -553,7 +553,7 @@ impl<'a> Machine<'a> {
                         let o = &self.code[self.pc..self.pc + base + 1];
                         push!(self.stack, o);
                     } else {
-                        return Interupt::Exit(Exit::StackUnderflow);
+                        return Interrupt::Exit(Exit::StackUnderflow);
                     }
 
                     self.pc += base + 1;
@@ -582,7 +582,7 @@ impl<'a> Machine<'a> {
                         let e = self.stack[idx];
                         push!(self.stack, e);
                     } else {
-                        return Interupt::Exit(Exit::StackUnderflow);
+                        return Interrupt::Exit(Exit::StackUnderflow);
                     }
                 }
                 Op::Swap1
@@ -609,13 +609,15 @@ impl<'a> Machine<'a> {
                         let idx = top - swap_idx - 1;
                         self.stack.swap(top, idx);
                     } else {
-                        return Interupt::Exit(Exit::StackUnderflow);
+                        return Interrupt::Exit(Exit::StackUnderflow);
                     }
                 }
 
-                Op::Return => return Interupt::Exit(Exit::Ret(pop!(self.stack), pop!(self.stack))),
+                Op::Return => {
+                    return Interrupt::Exit(Exit::Ret(pop!(self.stack), pop!(self.stack)))
+                }
                 Op::Revert => {
-                    return Interupt::Exit(Exit::Revert(pop!(self.stack), pop!(self.stack)))
+                    return Interrupt::Exit(Exit::Revert(pop!(self.stack), pop!(self.stack)))
                 }
                 Op::SelfDestruct => {
                     let val = pop!(self.stack);
@@ -626,15 +628,15 @@ impl<'a> Machine<'a> {
                     let mut address = [0; 20];
                     address.copy_from_slice(&bytes[12..32]);
 
-                    return Interupt::Exit(Exit::SelfDestruct(H160::from(&address)));
+                    return Interrupt::Exit(Exit::SelfDestruct(H160::from(&address)));
                 }
                 _ => {
                     error!("UNSUPPORTED OP: {:?}", op);
-                    return Interupt::Exit(Exit::NotSupported);
+                    return Interrupt::Exit(Exit::NotSupported);
                 }
             }
         }
 
-        Interupt::Exit(Exit::Ret(0.into(), 0.into()))
+        Interrupt::Exit(Exit::Ret(0.into(), 0.into()))
     }
 }
